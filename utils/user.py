@@ -19,7 +19,7 @@ class UserUtil:
 
     @classmethod
     def _get_by_username(cls, username):
-        return UserRetrieveSchema.parse_obj(
+        return (
             cls.session
             .query(User)
             .filter(User.username == username)
@@ -100,3 +100,10 @@ class UserUtil:
         cls._get_by_id(user_id).delete()
         cls.session.commit()
         return {'details': 'Deleted'}
+
+
+def authenticate(username, password):
+    user = UserUtil()._get_by_username(username).first()
+    if not user or not user.verify_password(password):
+        return False
+    return user
