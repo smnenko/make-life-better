@@ -25,15 +25,8 @@ class User(Base):
     def full_name(self):
         return f'{self.first_name} {self.last_name}'
 
-    @property
-    def token(self):
-        pass
-
     def set_password(self, password):
         self.password = bcrypt.hashpw(
             password.encode('utf-8'),
             bcrypt.gensalt()
-        )
-
-    def verify_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.password)
+        ).decode('utf-8')

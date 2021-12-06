@@ -18,15 +18,15 @@ class UserCreateSchema(BaseModel):
 
     @classmethod
     def is_username_alpha_valid(cls, username: str):
-        if username.isalpha():
+        if not username.isalpha():
             raise ValueError('Username should consists of alphabetical characters')
         return True
 
     @validator('username')
     def validate_username(cls, field):
         if (
-                is_username_space_valid(field)
-                and is_username_alpha_valid(field)
+                cls.is_username_space_valid(field)
+                and cls.is_username_alpha_valid(field)
         ):
             return field
 
