@@ -1,9 +1,8 @@
 import bcrypt
 from sqlalchemy import Column, Date, DateTime, Integer, String
 from sqlalchemy.sql import func
-from jose import jwt, JWTError
 
-from . import Base
+from models import Base
 
 
 class User(Base):

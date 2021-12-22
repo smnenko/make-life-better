@@ -3,15 +3,14 @@ import re
 from datetime import datetime, timedelta
 
 import bcrypt
-from fastapi import status, HTTPException, Response
 import sqlalchemy.exc
-from jose import jwt, JWTError
+from fastapi import HTTPException, Response, status
+from jose import JWTError, jwt
 from sqlalchemy.orm import sessionmaker
 
 from models import engine
 from models.user_model import User
 from schemas.user_schema import UserRetrieveSchema
-
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
