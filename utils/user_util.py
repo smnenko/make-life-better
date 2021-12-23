@@ -3,14 +3,16 @@ import re
 from datetime import datetime, timedelta
 
 import bcrypt
-import sqlalchemy.exc
-from fastapi import HTTPException, Response, status
-from jose import JWTError, jwt
+import sqlalchemy
+from fastapi import HTTPException
+from jose import jwt, JWTError
 from sqlalchemy.orm import sessionmaker
+from fastapi import status
 
+from exceptions.user_exceptions import UserUniqueConstraintException
 from models import engine
 from models.user_model import User
-from schemas.user_schema import UserRetrieveSchema
+
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
@@ -21,56 +23,19 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 
 
-def verify_password(hashed_password, password):
-    return bcrypt.checkpw(
-        password.encode('utf-8'),
-        hashed_password.encode('utf-8')
-    )
-
-
-def authenticate(username, password):
-    user = UserUtil()._get_by_username(username).first()
-    if not user:
-        return False
-    if not verify_password(user.password, password):
-        return False
-
-    return user
-
-
-def create_access_token(data: dict, expired_min=ACCESS_TOKEN_EXPIRE_MINUTES):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=expired_min)
-    to_encode.update({'exp': expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY.encode('utf-8'), algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def get_current_user(token: str):
-    credentials_exception = HTTPException(
-        status.HTTP_401_UNAUTHORIZED,
-        'Could not validate credentials'
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get('sub')
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-
-    user = UserUtil._get_by_username(username)
-    if user.first() is None:
-        raise credentials_exception
-    return user
-
-
 class UserUtil:
-
     session = Session()
 
     @classmethod
-    def _get_by_username(cls, username):
+    def get_field_from_error_msg(cls, msg):
+        return re.search(r'(?<=.\()(.*)(?=\)=)', msg).group()
+
+    @classmethod
+    def get_all_users(cls):
+        return cls.session.query(User).order_by(User.id.asc())
+
+    @classmethod
+    def get_by_username(cls, username: str):
         return (
             cls.session
             .query(User)
@@ -78,7 +43,7 @@ class UserUtil:
         )
 
     @classmethod
-    def _get_by_id(cls, user_id):
+    def get_by_id(cls, user_id: int):
         return (
             cls.session
             .query(User)
@@ -86,13 +51,9 @@ class UserUtil:
         )
 
     @classmethod
-    def get_field_from_error_msg(cls, msg):
-        return re.search(r'(?<=.\()(.*)(?=\)=)', msg).group()
-
-    @classmethod
-    def create_user(cls, user):
-        usr = User(username=user.username, email=user.email)
-        usr.set_password(user.password)
+    def create_user(cls, email, username, password):
+        usr = User(username=username, email=email)
+        usr.set_password(password)
         try:
             cls.session.add(usr)
             cls.session.commit()
@@ -101,73 +62,121 @@ class UserUtil:
             cls.session.rollback()
             field = f'{cls.get_field_from_error_msg(e.orig.args[0])}'
             detail = f'User with this already {field} exists'
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail)
-        return usr
+            raise UserUniqueConstraintException(field, detail)
 
     @classmethod
-    def get_all(cls):
-        return [
-            UserRetrieveSchema.parse_obj(i.__dict__)
-            for i in cls.session.query(User).order_by(User.id.asc())
-        ]
-
-    @classmethod
-    def get_by_id(cls, user_id):
-        user = cls._get_by_id(user_id).first()
-        return UserRetrieveSchema.parse_obj(
-            user.__dict__
-        ) if user else None
-
-    @classmethod
-    def update_user(cls, user):
-        usr: User = cls._get_by_id(user.id).first()
+    def update_user(
+            cls,
+            id_,
+            email,
+            username,
+            first_name,
+            last_name,
+            birth_date,
+            password
+    ):
+        usr: User = cls.get_by_id(id_).first()
         if not usr:
-            new_user = User(**user.__dict__)
-            new_user.id = None
+            new_user = User(
+                email=email,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                birth_date=birth_date
+            )
+            new_user.set_password(password)
             cls.session.add(new_user)
             cls.session.commit()
             cls.session.refresh(new_user)
-            return UserRetrieveSchema.parse_obj(new_user.__dict__)
+            return new_user
 
-        usr.username = user.username
-        usr.email = user.email
-        usr.first_name = user.first_name
-        usr.last_name = user.last_name
-        usr.birth_date = user.birth_date
+        usr.username = username
+        usr.email = email
+        usr.first_name = first_name
+        usr.last_name = last_name
+        usr.birth_date = birth_date
         usr.updated_at = datetime.now()
+        usr.set_password(password)
 
         try:
             cls.session.add(usr)
             cls.session.commit()
-            cls.session.refresh(usr, [
-                'id', 'username', 'email', 'first_name', 'last_name', 'birth_date', 'updated_at'
-            ])
-
+            cls.session.refresh(
+                usr, [
+                    'id',
+                    'username',
+                    'email',
+                    'first_name',
+                    'last_name',
+                    'birth_date',
+                    'password',
+                    'updated_at'
+                ]
+            )
+            return usr
         except sqlalchemy.exc.IntegrityError as e:
             cls.session.rollback()
             field = cls.get_field_from_error_msg(e.orig.args[0])
-            detail = f'This {field} already taken'
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail)
-        return UserRetrieveSchema.parse_obj(usr.__dict__)
+            detail = f'User with this already {field} exists'
+            raise UserUniqueConstraintException(field, detail)
 
     @classmethod
-    def delete_by_id(cls, user_id):
-        user = cls._get_by_id(user_id)
+    def delete_user(cls, user_id: int):
+        user = cls.get_by_id(user_id)
         if not isinstance(user.first(), User):
-            raise HTTPException(status.HTTP_204_NO_CONTENT)
+            raise UserDoesNotExists('User with this id doesn\'t exists')
 
         user.delete()
         cls.session.commit()
-        return Response(status_code=status.HTTP_200_OK)
 
     @classmethod
-    def token(cls, username, password):
-        user = authenticate(username, password)
-        if not user:
-            raise HTTPException(
-                status.HTTP_401_UNAUTHORIZED,
-                'Username or password is invalid'
-            )
+    def verify_password(cls, hashed_password: str, password: str):
+        return bcrypt.checkpw(
+            password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
 
-        access_token = create_access_token({'username': username})
-        return {'access_token': access_token, 'token_type': 'Bearer'}
+    @classmethod
+    def authenticate(cls, username: str, password: str):
+        user = cls.get_by_username(username).first()
+        if not user:
+            return False
+        if not cls.verify_password(user.password, password):
+            return False
+
+        return user
+
+    @classmethod
+    def create_access_token(
+            cls,
+            data: dict,
+            expired_min=ACCESS_TOKEN_EXPIRE_MINUTES
+    ):
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(minutes=expired_min)
+        to_encode.update({'exp': expire})
+        encoded_jwt = jwt.encode(
+            to_encode,
+            SECRET_KEY.encode('utf-8'),
+            algorithm=ALGORITHM
+        )
+        return encoded_jwt
+
+    @classmethod
+    def get_current_user(cls, token: str):
+        credentials_exception = HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            'Could not validate credentials'
+        )
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get('sub')
+            if username is None:
+                raise credentials_exception
+        except JWTError:
+            raise credentials_exception
+
+        user = cls.get_by_username(username)
+        if user.first() is None:
+            raise credentials_exception
+        return user

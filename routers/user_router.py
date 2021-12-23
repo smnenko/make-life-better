@@ -1,37 +1,34 @@
 from fastapi import APIRouter
+from fastapi_utils.cbv import cbv, Depends
 
 from schemas.user_schema import UserCreateSchema, UserUpdateSchema
 from utils.user_util import UserUtil
-
+from views.user_view import UserView
 
 router = APIRouter(prefix='/users', tags=['Users'])
 
 
-@router.get('/')
-async def get_all_users():
-    return UserUtil.get_all()
+@cbv(router)
+class UserRouter:
 
+    user_id = Depends(UserUtil.get_current_user)
 
-@router.get('/{user_id}')
-async def get_user_by_id(user_id: int):
-    return UserUtil.get_by_id(user_id)
+    @router.get('/')
+    async def get_all_users(self):
+        return UserView.get_all()
 
+    @router.get('/{user_id}')
+    async def get_user(self, user_id: int):
+        return UserView.get(user_id)
 
-@router.post('/')
-async def create_user(user: UserCreateSchema):
-    return UserUtil.create_user(user)
+    @router.post('/')
+    async def create_user(self, user: UserCreateSchema):
+        return UserView.create(user)
 
+    @router.put('/')
+    async def update_user(self, user: UserUpdateSchema):
+        return UserView.update(user)
 
-@router.post('/token')
-async def login_for_access_token(username, password):
-    return UserUtil.token(username, password)
-
-
-@router.put('/')
-async def update_user(user: UserUpdateSchema):
-    return UserUtil.update_user(user)
-
-
-@router.delete('/{user_id}')
-async def delete_user_by_id(user_id: int):
-    return UserUtil.delete_by_id(user_id)
+    @router.delete('/{user_id}')
+    async def delete_user(self, user_id: int):
+        return UserView.delete(user_id)

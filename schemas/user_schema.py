@@ -1,14 +1,23 @@
-from typing import List, Optional
+from typing import Optional
 from datetime import date
 
 from pydantic import BaseModel, EmailStr, validator
 
 
-class UserCreateSchema(BaseModel):
-    username: str
-    email: EmailStr
+class BaseUserCreationSchema(BaseModel):
     password: str
     password_confirm: str
+
+    @validator('password_confirm')
+    def validate_password(cls, field, values):
+        if field != values.get('password'):
+            raise ValueError('Passwords don\'t match')
+        return field
+
+
+class BaseUserValidationSchema(BaseModel):
+    username: str
+    email: EmailStr
 
     @classmethod
     def is_username_space_valid(cls, username: str):
@@ -19,7 +28,9 @@ class UserCreateSchema(BaseModel):
     @classmethod
     def is_username_alpha_valid(cls, username: str):
         if not username.isalpha():
-            raise ValueError('Username should consists of alphabetical characters')
+            raise ValueError(
+                'Username should consists of alphabetical characters'
+            )
         return True
 
     @validator('username')
@@ -30,20 +41,9 @@ class UserCreateSchema(BaseModel):
         ):
             return field
 
-    @validator('password_confirm')
-    def validate_password(cls, field, values):
-        if field != values.get('password'):
-            raise ValueError('Passwords don\'t match')
-        return field
 
-
-class UserUpdateSchema(BaseModel):
-    id: int
-    username: str
-    email: EmailStr
-    first_name: str
-    last_name: str
-    birth_date: date
+class UserCreateSchema(BaseUserCreationSchema, BaseUserValidationSchema):
+    pass
 
 
 class UserRetrieveSchema(BaseModel):
@@ -53,3 +53,10 @@ class UserRetrieveSchema(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     birth_date: Optional[date]
+
+
+class UserUpdateSchema(BaseUserCreationSchema, BaseUserValidationSchema):
+    id: int
+    first_name: str
+    last_name: str
+    birth_date: date
