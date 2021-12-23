@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from fastapi_utils.cbv import cbv, Depends
 
 from schemas.user_schema import UserCreateSchema, UserUpdateSchema
-from utils.user_util import UserUtil
 from views.user_view import UserView
 
 router = APIRouter(prefix='/users', tags=['Users'])
@@ -10,8 +9,6 @@ router = APIRouter(prefix='/users', tags=['Users'])
 
 @cbv(router)
 class UserRouter:
-
-    user_id = Depends(UserUtil.get_current_user)
 
     @router.get('/')
     async def get_all_users(self):
