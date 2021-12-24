@@ -19,7 +19,7 @@ class UserView:
         user = UserUtil.get_by_id(user_id).first()
         if user:
             return UserRetrieveSchema.parse_obj(user.__dict__)
-        return HTTPException(status.HTTP_204_NO_CONTENT)
+        raise HTTPException(status.HTTP_204_NO_CONTENT)
 
     @classmethod
     def create(cls, user: UserCreateSchema):
@@ -31,7 +31,7 @@ class UserView:
             )
             return UserRetrieveSchema.parse_obj(user.__dict__)
         except UserUniqueConstraintException as e:
-            return HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
     @classmethod
     def update(cls, user: UserUpdateSchema):
@@ -45,9 +45,9 @@ class UserView:
                 birth_date=user.birth_date,
                 password=user.password
             )
-            return UserRetrieveSchema.parse_obj(usr.__dict__)
+            return UserRetrieveSchema.parse_obj(user.__dict__)
         except UserUniqueConstraintException as e:
-            return HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
     @classmethod
     def delete(cls, user_id: int):
@@ -55,7 +55,7 @@ class UserView:
             UserUtil.delete_user(user_id)
             return {'status': 'Deleted'}
         except UserDoesNotExists as e:
-            return HTTPException(status.HTTP_204_NO_CONTENT, detail=e.message)
+            raise HTTPException(status.HTTP_204_NO_CONTENT, detail=e.message)
 
     @classmethod
     def token(cls, username, password):

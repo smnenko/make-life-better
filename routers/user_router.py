@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi_utils.cbv import cbv, Depends
+from fastapi_utils.cbv import cbv
 
 from schemas.user_schema import UserCreateSchema, UserUpdateSchema
 from views.user_view import UserView

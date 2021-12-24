@@ -9,7 +9,8 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import sessionmaker
 from fastapi import status
 
-from exceptions.user_exceptions import UserUniqueConstraintException
+from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists, \
+    InvalidCredentialsException
 from models import engine
 from models.user_model import User
 
@@ -164,8 +165,7 @@ class UserUtil:
 
     @classmethod
     def get_current_user(cls, token: str):
-        credentials_exception = HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
+        credentials_exception = InvalidCredentialsException(
             'Could not validate credentials'
         )
         try:
