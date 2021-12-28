@@ -35,10 +35,10 @@ class UserView:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
     @classmethod
-    def update(cls, user: User, data: UserUpdateSchema):
+    def update(cls, user_id: int, data: UserUpdateSchema):
         try:
             user = UserUtil.update_user(
-                id_=user.id,
+                id_=user_id,
                 email=data.email,
                 username=data.username,
                 first_name=data.first_name,

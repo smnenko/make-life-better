@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, Body
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi_permissions import configure_permissions
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 
 from models.user_model import User
 from permissions import Permission, admin_acl
@@ -12,12 +11,17 @@ router = APIRouter(prefix='/users', tags=['Users'])
 
 
 @router.get('/')
-async def get_all_users(user: User = Permission('view', admin_acl)):
+async def get_all_users(
+        user: User = Permission('view', admin_acl)
+):
     return UserView.get_all()
 
 
 @router.get('/{user_id}')
-async def get_user(user: User = Permission('view', UserUtil.get_by_id)):
+async def get_user(
+        user_id: int,
+        user: User = Permission('view', UserUtil.get_by_id)
+):
     return UserView.get(user.id)
 
 
@@ -33,14 +37,16 @@ async def get_access_token(credentials: OAuth2PasswordRequestForm = Depends()):
 
 @router.put('/{user_id}')
 async def update_user(
+        user_id: int,
         data: UserUpdateSchema,
         user=Permission('edit', UserUtil.get_by_id)
 ):
-    return UserView.update(user, data)
+    return UserView.update(user_id, data)
 
 
 @router.delete('/{user_id}')
 async def delete_user(
+        user_id: int,
         user: User = Permission('delete', UserUtil.get_by_id)
 ):
-    return UserView.delete(user.id)
+    return UserView.delete(user_id)
