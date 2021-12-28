@@ -1,6 +1,6 @@
 import bcrypt
-from sqlalchemy import Column, Date, DateTime, Integer, String
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
+from sqlalchemy.sql import func, expression
 
 from models import Base
 
@@ -16,6 +16,8 @@ class User(Base):
     birth_date = Column(Date, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
+    is_active = Column(Boolean, nullable=False, server_default=expression.true())
+    is_admin = Column(Boolean, nullable=False, server_default=expression.false())
 
     def __repr__(self):
         return f'<{self.__class__.__name__}>({self.email}, {self.username})'

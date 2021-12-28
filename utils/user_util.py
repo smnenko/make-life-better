@@ -4,13 +4,14 @@ from datetime import datetime, timedelta
 
 import bcrypt
 import sqlalchemy
-from fastapi import HTTPException
 from jose import jwt, JWTError
 from sqlalchemy.orm import sessionmaker
-from fastapi import status
 
-from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists, \
+from exceptions.user_exceptions import (
+    UserUniqueConstraintException,
+    UserDoesNotExists,
     InvalidCredentialsException
+)
 from models import engine
 from models.user_model import User
 
@@ -59,6 +60,7 @@ class UserUtil:
             cls.session.add(usr)
             cls.session.commit()
             cls.session.refresh(usr)
+            return usr
         except sqlalchemy.exc.IntegrityError as e:
             cls.session.rollback()
             field = f'{cls.get_field_from_error_msg(e.orig.args[0])}'

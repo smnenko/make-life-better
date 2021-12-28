@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Response, status
 
 from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists
 from schemas.user_schema import UserRetrieveSchema, UserCreateSchema, UserUpdateSchema
@@ -29,6 +29,7 @@ class UserView:
                 username=user.username,
                 password=user.password
             )
+            print(user)
             return UserRetrieveSchema.parse_obj(user.__dict__)
         except UserUniqueConstraintException as e:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
@@ -54,11 +55,11 @@ class UserView:
         try:
             UserUtil.delete_user(user_id)
             return {'status': 'Deleted'}
-        except UserDoesNotExists as e:
-            raise HTTPException(status.HTTP_204_NO_CONTENT, detail=e.message)
+        except UserDoesNotExists:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @classmethod
-    def token(cls, username, password):
+    def token(cls, username: str, password: str):
         user = UserUtil.authenticate(username, password)
         if not user:
             raise HTTPException(
