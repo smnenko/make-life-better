@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Request
-from fastapi_utils.cbv import cbv
 
 from views.money_view import MoneyView
 

@@ -1,6 +1,7 @@
 from fastapi import HTTPException, Response, status
 
 from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists
+from models.user_model import User
 from schemas.user_schema import UserRetrieveSchema, UserCreateSchema, UserUpdateSchema
 from utils.user_util import UserUtil
 
@@ -16,7 +17,7 @@ class UserView:
 
     @classmethod
     def get(cls, user_id: int):
-        user = UserUtil.get_by_id(user_id).first()
+        user = UserUtil.get_by_id(user_id)
         if user:
             return UserRetrieveSchema.parse_obj(user.__dict__)
         raise HTTPException(status.HTTP_204_NO_CONTENT)
@@ -29,22 +30,20 @@ class UserView:
                 username=user.username,
                 password=user.password
             )
-            print(user)
             return UserRetrieveSchema.parse_obj(user.__dict__)
         except UserUniqueConstraintException as e:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
     @classmethod
-    def update(cls, user: UserUpdateSchema):
+    def update(cls, user: User, data: UserUpdateSchema):
         try:
             user = UserUtil.update_user(
                 id_=user.id,
-                email=user.email,
-                username=user.username,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                birth_date=user.birth_date,
-                password=user.password
+                email=data.email,
+                username=data.username,
+                first_name=data.first_name,
+                last_name=data.last_name,
+                birth_date=data.birth_date,
             )
             return UserRetrieveSchema.parse_obj(user.__dict__)
         except UserUniqueConstraintException as e:
@@ -54,9 +53,9 @@ class UserView:
     def delete(cls, user_id: int):
         try:
             UserUtil.delete_user(user_id)
-            return {'status': 'Deleted'}
-        except UserDoesNotExists:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
+        except UserDoesNotExists:
+            return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
     @classmethod
     def token(cls, username: str, password: str):

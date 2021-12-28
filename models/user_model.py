@@ -1,4 +1,5 @@
 import bcrypt
+from fastapi_permissions import Allow
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
 from sqlalchemy.sql import func, expression
 
@@ -19,8 +20,9 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, server_default=expression.true())
     is_admin = Column(Boolean, nullable=False, server_default=expression.false())
 
-    def __repr__(self):
-        return f'<{self.__class__.__name__}>({self.email}, {self.username})'
+    @property
+    def principals(self):
+        return [f'user:{self.id}', f'admin:{self.is_admin}']
 
     @property
     def full_name(self):
@@ -31,3 +33,15 @@ class User(Base):
             password.encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
+
+    def __acl__(self):
+        return [
+            (Allow, f'user:{self.id}', 'view'),
+            (Allow, f'user:{self.id}', 'edit'),
+            (Allow, f'user:{self.id}', 'delete'),
+            (Allow, 'admin:True', 'edit'),
+            (Allow, 'admin:True', 'delete')
+        ]
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}>({self.email}, {self.username})'

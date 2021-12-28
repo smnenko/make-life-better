@@ -55,8 +55,7 @@ class UserRetrieveSchema(BaseModel):
     birth_date: Optional[date]
 
 
-class UserUpdateSchema(BaseUserCreationSchema, BaseUserValidationSchema):
-    id: int
+class UserUpdateSchema(BaseUserValidationSchema):
     first_name: str
     last_name: str
     birth_date: date

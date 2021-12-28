@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from exceptions.user_exceptions import (
     UserUniqueConstraintException,
     UserDoesNotExists,
-    InvalidCredentialsException
+    InvalidTokenError
 )
 from models import engine
 from models.user_model import User
@@ -42,7 +42,7 @@ class UserUtil:
             cls.session
             .query(User)
             .filter(User.username == username)
-        )
+        ).first()
 
     @classmethod
     def get_by_id(cls, user_id: int):
@@ -50,7 +50,25 @@ class UserUtil:
             cls.session
             .query(User)
             .filter(User.id == user_id)
+        ).first()
+
+    @classmethod
+    def get_by_token(cls, token: str):
+        credentials_exception = InvalidTokenError(
+            'Could not validate credentials'
         )
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get('username')
+            if username is None:
+                raise credentials_exception
+        except JWTError:
+            raise credentials_exception
+
+        user = cls.get_by_username(username)
+        if user is None:
+            raise credentials_exception
+        return user
 
     @classmethod
     def create_user(cls, email, username, password):
@@ -76,30 +94,14 @@ class UserUtil:
             first_name,
             last_name,
             birth_date,
-            password
     ):
-        usr: User = cls.get_by_id(id_).first()
-        if not usr:
-            new_user = User(
-                email=email,
-                username=username,
-                first_name=first_name,
-                last_name=last_name,
-                birth_date=birth_date
-            )
-            new_user.set_password(password)
-            cls.session.add(new_user)
-            cls.session.commit()
-            cls.session.refresh(new_user)
-            return new_user
-
+        usr: User = cls.get_by_id(id_)
         usr.username = username
         usr.email = email
         usr.first_name = first_name
         usr.last_name = last_name
         usr.birth_date = birth_date
         usr.updated_at = datetime.now()
-        usr.set_password(password)
 
         try:
             cls.session.add(usr)
@@ -125,7 +127,7 @@ class UserUtil:
 
     @classmethod
     def delete_user(cls, user_id: int):
-        user = cls.get_by_id(user_id)
+        user = cls.session.query(User).filter(User.id == user_id)
         if not isinstance(user.first(), User):
             raise UserDoesNotExists('User with this id doesn\'t exists')
 
@@ -141,7 +143,7 @@ class UserUtil:
 
     @classmethod
     def authenticate(cls, username: str, password: str):
-        user = cls.get_by_username(username).first()
+        user = cls.get_by_username(username)
         if not user:
             return False
         if not cls.verify_password(user.password, password):
@@ -164,21 +166,3 @@ class UserUtil:
             algorithm=ALGORITHM
         )
         return encoded_jwt
-
-    @classmethod
-    def get_current_user(cls, token: str):
-        credentials_exception = InvalidCredentialsException(
-            'Could not validate credentials'
-        )
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username = payload.get('sub')
-            if username is None:
-                raise credentials_exception
-        except JWTError:
-            raise credentials_exception
-
-        user = cls.get_by_username(username)
-        if user.first() is None:
-            raise credentials_exception
-        return user
