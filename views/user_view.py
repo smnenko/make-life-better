@@ -1,7 +1,6 @@
 from fastapi import HTTPException, Response, status
 
 from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists
-from models.user_model import User
 from schemas.user_schema import UserRetrieveSchema, UserCreateSchema, UserUpdateSchema
 from utils.user_util import UserUtil
 
