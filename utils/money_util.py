@@ -4,6 +4,7 @@ from typing import Optional
 
 from sqlalchemy.orm import sessionmaker
 
+from exceptions.money_exceptions import MoneyRecordDoesNotExist
 from models import engine
 from models.money_model import Money
 
