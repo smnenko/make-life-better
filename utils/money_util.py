@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -18,7 +18,52 @@ class MoneyUtil:
 
     @classmethod
     def get_all_by_user_id(cls, user_id: int):
-        return cls.session.query(Money).filter(Money.user_id == user_id).all()
+        return (
+            cls
+            .session
+            .query(Money)
+            .filter(Money.user_id == user_id)
+            .order_by(Money.id.desc())
+        )
+
+    @classmethod
+    def get_today_by_user_id(cls, user_id: int):
+        return (
+            cls
+            .session
+            .query(Money)
+            .filter(
+                Money.user_id == user_id,
+                Money.date == date.today()
+            )
+            .order_by(Money.id.desc())
+        )
+
+    @classmethod
+    def get_week_by_user_id(cls, user_id: int):
+        return (
+            cls
+            .session
+            .query(Money)
+            .filter(
+                Money.user_id == user_id,
+                Money.date >= date.today() - timedelta(weeks=1)
+            )
+            .order_by(Money.id.desc())
+        )
+
+    @classmethod
+    def get_month_by_user_id(cls, user_id: int):
+        return (
+            cls
+            .session
+            .query(Money)
+            .filter(
+                Money.user_id == user_id,
+                Money.date >= date.today() - timedelta(days=30)
+            )
+            .order_by(Money.id.desc())
+        )
 
     @classmethod
     def create_money(
