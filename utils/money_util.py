@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from exceptions.money_exceptions import MoneyRecordDoesNotExist
 from models import engine
 from models.money_model import Money
+from schemas.money_schema import MoneyRetrieveAllSchema
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -66,6 +67,13 @@ class MoneyUtil:
         )
 
     @classmethod
+    def get_by_id(cls, money_id):
+        money = cls.session.query(Money).filter(Money.id == money_id).first()
+        if not isinstance(money, Money):
+            raise MoneyRecordDoesNotExist('Money record does\'t exist')
+        return money
+
+    @classmethod
     def create_money(
             cls,
             user_id: int,
@@ -85,6 +93,7 @@ class MoneyUtil:
         )
         cls.session.add(money)
         cls.session.commit()
+        cls.session.refresh(money)
         return money
 
     @classmethod
@@ -116,3 +125,12 @@ class MoneyUtil:
 
         money.delete()
         cls.session.commit()
+
+    @classmethod
+    def get_calculated_totals(cls, monies: MoneyRetrieveAllSchema):
+        result_dict = monies.dict()
+        result_dict.update({
+            'total_incomes': monies.get_total_incomes(),
+            'total_outlays': monies.get_total_outlays()
+        })
+        return result_dict
