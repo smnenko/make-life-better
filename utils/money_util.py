@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker
 
 from models import engine
 from models.money_model import Money
-from models.user_model import User
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -21,7 +20,7 @@ class MoneyUtil:
         return cls.session.query(Money).filter(Money.user_id == user_id).all()
 
     @classmethod
-    def create(
+    def create_money(
             cls,
             user_id: int,
             type: int,
@@ -42,3 +41,32 @@ class MoneyUtil:
         cls.session.commit()
         return money
 
+    @classmethod
+    def edit_money(
+            cls,
+            money_id: int,
+            is_regular: bool,
+            title: str,
+            amount: Decimal
+    ):
+        money = cls.session.query(Money).filter(Money.id == money_id).first()
+        if not isinstance(money, Money):
+            raise MoneyRecordDoesNotExist('Money record does\'t exist')
+
+        money.is_regular = is_regular
+        money.title = title
+        money.amount = amount
+
+        cls.session.add(money)
+        cls.session.commit()
+        cls.session.refresh(money)
+        return money
+
+    @classmethod
+    def delete_money(cls, money_id: int):
+        money = cls.session.query(Money).filter(Money.id == money_id)
+        if not isinstance(money.first(), Money):
+            raise MoneyRecordDoesNotExist('Money record does\'t exist')
+
+        money.delete()
+        cls.session.commit()
