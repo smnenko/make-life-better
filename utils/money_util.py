@@ -68,10 +68,7 @@ class MoneyUtil:
 
     @classmethod
     def get_by_id(cls, money_id):
-        money = cls.session.query(Money).filter(Money.id == money_id).first()
-        if not isinstance(money, Money):
-            raise MoneyRecordDoesNotExist('Money record does\'t exist')
-        return money
+        return cls.session.query(Money).filter(Money.id == money_id).first()
 
     @classmethod
     def create_money(
@@ -102,7 +99,8 @@ class MoneyUtil:
             money_id: int,
             is_regular: bool,
             title: str,
-            amount: Decimal
+            amount: Decimal,
+            type: int
     ):
         money = cls.session.query(Money).filter(Money.id == money_id).first()
         if not isinstance(money, Money):
@@ -111,6 +109,7 @@ class MoneyUtil:
         money.is_regular = is_regular
         money.title = title
         money.amount = amount
+        money.type = type
 
         cls.session.add(money)
         cls.session.commit()
