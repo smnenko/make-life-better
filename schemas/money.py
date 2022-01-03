@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import List, Optional
 
+from fastapi_permissions import Allow
 from pydantic import BaseModel, validator
 
-from models.money_model import MoneyType
+from models.money import MoneyType
 
 
 class MoneyRetrieveSchema(BaseModel):
@@ -12,6 +13,9 @@ class MoneyRetrieveSchema(BaseModel):
     amount: Decimal
     type: MoneyType
     is_regular: bool
+
+    class Config:
+        orm_mode = True
 
 
 class MoneyCreateSchema(BaseModel):

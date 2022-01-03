@@ -1,10 +1,11 @@
 from enum import IntEnum
 
+from fastapi_permissions import Allow
 from sqlalchemy import Boolean, DECIMAL, Column, Date, Enum, ForeignKey, Integer, String
 from sqlalchemy.sql import func
 
-from models import Base
-from models.user_model import User
+from core.database import Base
+from models.user import User
 
 
 class MoneyType(IntEnum):
@@ -21,3 +22,13 @@ class Money(Base):
     title = Column(String(length=256), nullable=False)
     amount = Column(DECIMAL(6, 2), nullable=False)
     date = Column(Date, server_default=func.now(), nullable=False)
+
+    def __acl__(self):
+        return [
+            (Allow, f'user:{self.user_id}', 'view'),
+            (Allow, f'user:{self.user_id}', 'edit'),
+            (Allow, f'user:{self.user_id}', 'delete'),
+            (Allow, 'admin:True', 'view'),
+            (Allow, 'admin:True', 'edit'),
+            (Allow, 'admin:True', 'delete')
+        ]

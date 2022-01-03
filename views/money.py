@@ -2,20 +2,21 @@ from datetime import date
 
 from fastapi import HTTPException, status, Response
 
-from exceptions.money_exceptions import MoneyRecordDoesNotExist
-from schemas.money_schema import (
+from exceptions.money import MoneyRecordDoesNotExist
+from schemas.money import (
     MoneyCreateSchema,
     MoneyRetrieveAllSchema,
     MoneyRetrieveSchema
 )
-from utils.money_util import MoneyUtil
+from orms.money import MoneyOrm
+from utils.money_calculator import get_calculated_totals
 
 
 class MoneyView:
 
     @classmethod
     def get(cls, money_id: int):
-        money = MoneyUtil.get_by_id(money_id)
+        money = MoneyOrm.get_by_id(money_id)
         if not money:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
@@ -25,39 +26,39 @@ class MoneyView:
 
     @classmethod
     def get_today_for_user(cls, user_id: int):
-        monies = MoneyUtil.get_today_by_user_id(user_id)
+        monies = MoneyOrm.get_today_by_user_id(user_id)
         monies_data = MoneyRetrieveAllSchema(
             monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
         )
-        return MoneyUtil.get_calculated_totals(monies_data)
+        return get_calculated_totals(monies_data)
 
     @classmethod
     def get_week_for_user(cls, user_id: int):
-        monies = MoneyUtil.get_week_by_user_id(user_id)
+        monies = MoneyOrm.get_week_by_user_id(user_id)
         monies_data = MoneyRetrieveAllSchema(
             monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
         )
-        return MoneyUtil.get_calculated_totals(monies_data)
+        return get_calculated_totals(monies_data)
 
     @classmethod
     def get_month_for_user(cls, user_id: int):
-        monies = MoneyUtil.get_month_by_user_id(user_id)
+        monies = MoneyOrm.get_month_by_user_id(user_id)
         monies_data = MoneyRetrieveAllSchema(
             monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
         )
-        return MoneyUtil.get_calculated_totals(monies_data)
+        return get_calculated_totals(monies_data)
 
     @classmethod
     def get_all_for_user(cls, user_id: int):
-        monies = MoneyUtil.get_all_by_user_id(user_id)
+        monies = MoneyOrm.get_all_by_user_id(user_id)
         monies_data = MoneyRetrieveAllSchema(
             monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
         )
-        return MoneyUtil.get_calculated_totals(monies_data)
+        return get_calculated_totals(monies_data)
 
     @classmethod
     def create(cls, user_id: int, data: MoneyCreateSchema):
-        money = MoneyUtil.create_money(
+        money = MoneyOrm.create_money(
             user_id,
             type=data.type,
             is_regular=data.is_regular,
@@ -70,7 +71,7 @@ class MoneyView:
     @classmethod
     def update(cls, money_id: int, data: MoneyCreateSchema):
         try:
-            money = MoneyUtil.edit_money(
+            money = MoneyOrm.edit_money(
                 money_id,
                 data.is_regular,
                 data.title,
@@ -84,7 +85,7 @@ class MoneyView:
     @classmethod
     def delete(cls, money_id: int):
         try:
-            MoneyUtil.delete_money(money_id)
+            MoneyOrm.delete_money(money_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except MoneyRecordDoesNotExist:
             raise HTTPException(status.HTTP_400_BAD_REQUEST)

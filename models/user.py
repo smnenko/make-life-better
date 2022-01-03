@@ -3,7 +3,7 @@ from fastapi_permissions import Allow
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
 from sqlalchemy.sql import func, expression
 
-from models import Base
+from core.database import Base
 
 
 class User(Base):
@@ -22,7 +22,7 @@ class User(Base):
 
     @property
     def principals(self):
-        return [f'user:{self.id}', f'admin:{self.is_admin}']
+        return [f'user:{self.id}', 'user:batch', f'admin:{self.is_admin}']
 
     @property
     def full_name(self):

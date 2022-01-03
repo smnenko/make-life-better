@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from models.user_model import User
-from permissions import Permission, admin_acl
-from schemas.user_schema import UserCreateSchema, UserUpdateSchema
-from utils.user_util import UserUtil
-from views.user_view import UserView
+from models.user import User
+from core.permissions import Permission, ADMIN_ACL
+from schemas.user import UserCreateSchema, UserUpdateSchema
+from orms.user import UserOrm
+from views.user import UserView
 
 router = APIRouter(prefix='/users', tags=['Users'])
 
 
 @router.get('/')
 async def get_all_users(
-        user: User = Permission('view', admin_acl)
+        user: User = Permission('view', ADMIN_ACL)
 ):
     return UserView.get_all()
 
@@ -20,9 +20,9 @@ async def get_all_users(
 @router.get('/{user_id}')
 async def get_user(
         user_id: int,
-        user: User = Permission('view', UserUtil.get_by_id)
+        user: User = Permission('view', UserOrm.get_by_id)
 ):
-    return UserView.get(user.id)
+    return UserView.get(user_id)
 
 
 @router.post('/')
@@ -39,7 +39,7 @@ async def get_access_token(credentials: OAuth2PasswordRequestForm = Depends()):
 async def update_user(
         user_id: int,
         data: UserUpdateSchema,
-        user=Permission('edit', UserUtil.get_by_id)
+        user: User = Permission('edit', UserOrm.get_by_id)
 ):
     return UserView.update(user_id, data)
 
@@ -47,6 +47,6 @@ async def update_user(
 @router.delete('/{user_id}')
 async def delete_user(
         user_id: int,
-        user: User = Permission('delete', UserUtil.get_by_id)
+        user: User = Permission('delete', UserOrm.get_by_id)
 ):
     return UserView.delete(user_id)
