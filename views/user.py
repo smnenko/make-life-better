@@ -1,8 +1,9 @@
 from fastapi import HTTPException, Response, status
 
-from exceptions.user_exceptions import UserUniqueConstraintException, UserDoesNotExists
-from schemas.user_schema import UserRetrieveSchema, UserCreateSchema, UserUpdateSchema
-from utils.user_util import UserUtil
+from exceptions.user import UserUniqueConstraintException, UserDoesNotExists
+from schemas.user import UserRetrieveSchema, UserCreateSchema, UserUpdateSchema
+from orms.user import UserOrm
+from utils.user_auth import authenticate, create_access_token
 
 
 class UserView:
@@ -11,12 +12,12 @@ class UserView:
     def get_all(cls):
         return [
             UserRetrieveSchema.parse_obj(i.__dict__)
-            for i in UserUtil.get_all_users()
+            for i in UserOrm.get_all_users()
         ]
 
     @classmethod
     def get(cls, user_id: int):
-        user = UserUtil.get_by_id(user_id)
+        user = UserOrm.get_by_id(user_id)
         if user:
             return UserRetrieveSchema.parse_obj(user.__dict__)
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
@@ -24,7 +25,7 @@ class UserView:
     @classmethod
     def create(cls, user: UserCreateSchema):
         try:
-            user = UserUtil.create_user(
+            user = UserOrm.create_user(
                 email=user.email,
                 username=user.username,
                 password=user.password
@@ -36,7 +37,7 @@ class UserView:
     @classmethod
     def update(cls, user_id: int, data: UserUpdateSchema):
         try:
-            user = UserUtil.update_user(
+            user = UserOrm.update_user(
                 id_=user_id,
                 email=data.email,
                 username=data.username,
@@ -51,19 +52,19 @@ class UserView:
     @classmethod
     def delete(cls, user_id: int):
         try:
-            UserUtil.delete_user(user_id)
+            UserOrm.delete_user(user_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except UserDoesNotExists:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
     @classmethod
     def token(cls, username: str, password: str):
-        user = UserUtil.authenticate(username, password)
+        user = authenticate(username, password)
         if not user:
             raise HTTPException(
                 status.HTTP_401_UNAUTHORIZED,
                 'Username or password is invalid'
             )
 
-        access_token = UserUtil.create_access_token({'username': username})
+        access_token = create_access_token({'username': username})
         return {'access_token': access_token, 'token_type': 'Bearer'}

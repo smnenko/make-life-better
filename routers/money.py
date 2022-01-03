@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from schemas.money_schema import MoneyCreateSchema
-from views.money_view import MoneyView
+from schemas.money import MoneyCreateSchema
+from views.money import MoneyView
 
 router = APIRouter(prefix='/money', tags=['Money'])
 

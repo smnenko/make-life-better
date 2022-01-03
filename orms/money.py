@@ -4,16 +4,15 @@ from typing import Optional
 
 from sqlalchemy.orm import sessionmaker
 
-from exceptions.money_exceptions import MoneyRecordDoesNotExist
-from models import engine
-from models.money_model import Money
-from schemas.money_schema import MoneyRetrieveAllSchema
+from exceptions.money import MoneyRecordDoesNotExist
+from core.database import engine
+from models.money import Money
 
 Session = sessionmaker()
 Session.configure(bind=engine)
 
 
-class MoneyUtil:
+class MoneyOrm:
 
     session = Session()
 
@@ -124,12 +123,3 @@ class MoneyUtil:
 
         money.delete()
         cls.session.commit()
-
-    @classmethod
-    def get_calculated_totals(cls, monies: MoneyRetrieveAllSchema):
-        result_dict = monies.dict()
-        result_dict.update({
-            'total_incomes': monies.get_total_incomes(),
-            'total_outlays': monies.get_total_outlays()
-        })
-        return result_dict
