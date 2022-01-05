@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from fastapi_permissions import configure_permissions, Allow
+from fastapi_permissions import configure_permissions, Allow, Authenticated
 
 from exceptions.user import InvalidTokenError
 from models.user import User
@@ -15,7 +15,11 @@ ADMIN_ACL = [
         (Allow, 'admin:True', 'delete')
 ]
 MONEY_ACL = [
-    (Allow, 'user:batch', 'batch')
+    (Allow, Authenticated, 'batch'),
+    (Allow, Authenticated, 'create'),
+    (Allow, Authenticated, 'view'),
+    (Allow, Authenticated, 'edit'),
+    (Allow, Authenticated, 'delete')
 ]
 
 
@@ -30,7 +34,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 def get_user_principals(user: User = Depends(get_current_user)):
-    return user.principals
+    return user.principals + [Authenticated]
 
 
 Permission = configure_permissions(get_user_principals)

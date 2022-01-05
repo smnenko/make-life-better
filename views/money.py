@@ -1,91 +1,148 @@
 from datetime import date
+from typing import List
 
-from fastapi import HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, status, Response, Depends
+from fastapi_permissions import has_permission, permission_exception
 
+from core.permissions import Permission, MONEY_ACL, get_user_principals
 from exceptions.money import MoneyRecordDoesNotExist
-from schemas.money import (
-    MoneyCreateSchema,
-    MoneyRetrieveAllSchema,
-    MoneyRetrieveSchema
-)
 from orms.money import MoneyOrm
-from utils.money_calculator import get_calculated_totals
+from models.money import Money as MoneyDB
+from schemas.money import (
+    MoneyCreate,
+    MoneyList,
+    Money
+)
+from utils.money_calculator import MoneyTotalsCalculator
+
+router = APIRouter(prefix='/money', tags=['Money'])
 
 
-class MoneyView:
-
-    @classmethod
-    def get(cls, money_id: int):
-        money = MoneyOrm.get_by_id(money_id)
-        if not money:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                'Money record not found'
-            )
-        return MoneyRetrieveSchema.parse_obj(money.__dict__)
-
-    @classmethod
-    def get_today_for_user(cls, user_id: int):
-        monies = MoneyOrm.get_today_by_user_id(user_id)
-        monies_data = MoneyRetrieveAllSchema(
-            monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
+@router.get('/{money_id}')
+async def get_money(
+        money_id: int,
+        money: Money = Permission('view', MoneyOrm.get_by_id)
+):
+    if not money:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            'Money record not found'
         )
-        return get_calculated_totals(monies_data)
+    return Money.from_orm(money)
 
-    @classmethod
-    def get_week_for_user(cls, user_id: int):
-        monies = MoneyOrm.get_week_by_user_id(user_id)
-        monies_data = MoneyRetrieveAllSchema(
-            monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
-        )
-        return get_calculated_totals(monies_data)
 
-    @classmethod
-    def get_month_for_user(cls, user_id: int):
-        monies = MoneyOrm.get_month_by_user_id(user_id)
-        monies_data = MoneyRetrieveAllSchema(
-            monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
-        )
-        return get_calculated_totals(monies_data)
+@router.get('/{user_id}/day')
+async def get_today_user_money(
+        user_id: int,
+        monies: List[MoneyDB] = Depends(MoneyOrm.get_today_by_user_id),
+        principals: list = Depends(get_user_principals),
+        acls: list = Permission('batch', MONEY_ACL)
+):
+    if not all(has_permission(principals, 'view', i) for i in monies):
+        raise permission_exception
 
-    @classmethod
-    def get_all_for_user(cls, user_id: int):
-        monies = MoneyOrm.get_all_by_user_id(user_id)
-        monies_data = MoneyRetrieveAllSchema(
-            monies=[MoneyRetrieveSchema.parse_obj(i.__dict__) for i in monies]
-        )
-        return get_calculated_totals(monies_data)
+    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
+    return MoneyList(
+        monies=[Money.from_orm(i) for i in monies],
+        total_incomes=incomes,
+        total_outlays=outlays
+    )
 
-    @classmethod
-    def create(cls, user_id: int, data: MoneyCreateSchema):
-        money = MoneyOrm.create_money(
-            user_id,
-            type=data.type,
-            is_regular=data.is_regular,
-            title=data.title,
-            amount=data.amount,
-            date=date.today()
-        )
-        return MoneyRetrieveSchema.parse_obj(money.__dict__)
 
-    @classmethod
-    def update(cls, money_id: int, data: MoneyCreateSchema):
-        try:
-            money = MoneyOrm.edit_money(
-                money_id,
-                data.is_regular,
-                data.title,
-                data.amount,
-                data.type
-            )
-            return MoneyRetrieveSchema.parse_obj(money.__dict__)
-        except MoneyRecordDoesNotExist as e:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
+@router.get('/{user_id}/week')
+async def get_week_user_money(
+        user_id: int,
+        monies: List[MoneyDB] = Depends(MoneyOrm.get_week_by_user_id),
+        principals: list = Depends(get_user_principals),
+        acls: list = Permission('batch', MONEY_ACL)
+):
+    if not all(has_permission(principals, 'view', i) for i in monies):
+        raise permission_exception
 
-    @classmethod
-    def delete(cls, money_id: int):
-        try:
-            MoneyOrm.delete_money(money_id)
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-        except MoneyRecordDoesNotExist:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
+    return MoneyList(
+        monies=[Money.from_orm(i) for i in monies],
+        total_incomes=incomes,
+        total_outlays=outlays
+    )
+
+
+@router.get('/{user_id}/month')
+async def get_month_user_money(
+        user_id: int,
+        monies: List[MoneyDB] = Depends(MoneyOrm.get_month_by_user_id),
+        principals: list = Depends(get_user_principals),
+        acls: list = Permission('batch', MONEY_ACL)
+):
+    if not all(has_permission(principals, 'view', i) for i in monies):
+        raise permission_exception
+
+    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
+    return MoneyList(
+        monies=[Money.from_orm(i) for i in monies],
+        total_incomes=incomes,
+        total_outlays=outlays
+    )
+
+
+@router.get('/{user_id}/all')
+async def get_all_user_money(
+        user_id: int,
+        monies: List[MoneyDB] = Depends(MoneyOrm.get_all_by_user_id),
+        principals: list = Depends(get_user_principals),
+        acls: list = Permission('batch', MONEY_ACL)
+):
+    if not all(has_permission(principals, 'view', i) for i in monies):
+        raise permission_exception
+
+    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
+    return MoneyList(
+        monies=[Money.from_orm(i) for i in monies],
+        total_incomes=incomes,
+        total_outlays=outlays
+    )
+
+
+@router.post('/{user_id}')
+async def create_money(
+        user_id: int,
+        data: MoneyCreate,
+        acls: list = Permission('create', MONEY_ACL)
+):
+    money = MoneyOrm.create_money(user_id, data)
+    return Money.from_orm(money)
+
+
+@router.put('/{money_id}')
+async def edit_money(
+        money_id: int,
+        data: MoneyCreate,
+        money: MoneyDB = Depends(MoneyOrm.get_by_id),
+        principles: list = Depends(get_user_principals),
+        acls: list = Permission('edit', MONEY_ACL)
+):
+    if not has_permission(principles, 'delete', money):
+        raise permission_exception
+
+    try:
+        money = MoneyOrm.update_money(money, data)
+        return Money.from_orm(money)
+    except MoneyRecordDoesNotExist as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
+
+
+@router.delete('/{money_id}')
+async def delete_money(
+        money_id: int,
+        money: MoneyDB = Depends(MoneyOrm.get_by_id),
+        principles: list = Depends(get_user_principals),
+        acls: list = Permission('delete', MONEY_ACL)
+):
+    if not has_permission(principles, 'delete', money):
+        raise permission_exception
+
+    try:
+        MoneyOrm.delete_money(money)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except MoneyRecordDoesNotExist:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)

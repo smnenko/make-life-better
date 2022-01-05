@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from exceptions.money import MoneyRecordDoesNotExist
 from core.database import engine
 from models.money import Money
+from schemas.money import MoneyCreate
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -70,22 +71,11 @@ class MoneyOrm:
         return cls.session.query(Money).filter(Money.id == money_id).first()
 
     @classmethod
-    def create_money(
-            cls,
-            user_id: int,
-            type: int,
-            is_regular: bool,
-            title: str,
-            amount: Decimal,
-            date: Optional[date]
-    ):
+    def create_money(cls, user_id: int, money: MoneyCreate):
         money = Money(
             user_id=user_id,
-            type=type,
-            is_regular=is_regular,
-            title=title,
-            amount=amount,
-            date=date
+            **money.dict(),
+            date=date.today()
         )
         cls.session.add(money)
         cls.session.commit()
@@ -93,22 +83,11 @@ class MoneyOrm:
         return money
 
     @classmethod
-    def edit_money(
-            cls,
-            money_id: int,
-            is_regular: bool,
-            title: str,
-            amount: Decimal,
-            type: int
-    ):
-        money = cls.session.query(Money).filter(Money.id == money_id).first()
-        if not isinstance(money, Money):
-            raise MoneyRecordDoesNotExist('Money record does\'t exist')
-
-        money.is_regular = is_regular
-        money.title = title
-        money.amount = amount
-        money.type = type
+    def update_money(cls, money: Money, data: MoneyCreate):
+        money.is_regular = data.is_regular
+        money.title = data.title
+        money.amount = data.amount
+        money.type = data.type
 
         cls.session.add(money)
         cls.session.commit()
@@ -116,8 +95,8 @@ class MoneyOrm:
         return money
 
     @classmethod
-    def delete_money(cls, money_id: int):
-        money = cls.session.query(Money).filter(Money.id == money_id)
+    def delete_money(cls, money: Money):
+        money = cls.session.query(Money).filter(Money.id == money.id)
         if not isinstance(money.first(), Money):
             raise MoneyRecordDoesNotExist('Money record does\'t exist')
 

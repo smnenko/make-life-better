@@ -10,7 +10,7 @@ from exceptions.user import (
 )
 from core.database import engine
 from models.user import User
-
+from schemas.user import UserUpdate
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -59,39 +59,29 @@ class UserOrm:
             raise UserUniqueConstraintException(field, detail)
 
     @classmethod
-    def update_user(
-            cls,
-            id_,
-            email,
-            username,
-            first_name,
-            last_name,
-            birth_date,
-    ):
-        usr: User = cls.get_by_id(id_)
-        usr.username = username
-        usr.email = email
-        usr.first_name = first_name
-        usr.last_name = last_name
-        usr.birth_date = birth_date
-        usr.updated_at = datetime.now()
+    def update_user(cls, user: User, data: UserUpdate):
+        user.username = data.username
+        user.email = data.email
+        user.first_name = data.first_name
+        user.last_name = data.last_name
+        user.birth_date = data.birth_date
+        user.updated_at = datetime.now()
 
         try:
-            cls.session.add(usr)
+            cls.session.add(user)
             cls.session.commit()
             cls.session.refresh(
-                usr, [
+                user, [
                     'id',
                     'username',
                     'email',
                     'first_name',
                     'last_name',
                     'birth_date',
-                    'password',
                     'updated_at'
                 ]
             )
-            return usr
+            return user
         except sqlalchemy.exc.IntegrityError as e:
             cls.session.rollback()
             field = cls._get_field_from_error_msg(e.orig.args[0])
@@ -99,8 +89,8 @@ class UserOrm:
             raise UserUniqueConstraintException(field, detail)
 
     @classmethod
-    def delete_user(cls, user_id: int):
-        user = cls.session.query(User).filter(User.id == user_id)
+    def delete_user(cls, user: User):
+        user = cls.session.query(User).filter(User.id == user.id)
         if not isinstance(user.first(), User):
             raise UserDoesNotExists('User with this id doesn\'t exists')
 
