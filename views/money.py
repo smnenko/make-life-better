@@ -19,7 +19,7 @@ router = APIRouter(prefix='/money', tags=['Money'])
 
 
 @router.get('/{money_id}')
-async def get_money(
+async def get_money_record(
         money_id: int,
         money: Money = Permission('view', MoneyOrm.get_by_id)
 ):
@@ -32,7 +32,7 @@ async def get_money(
 
 
 @router.get('/{user_id}/day')
-async def get_today_user_money(
+async def get_today_user_money_records(
         user_id: int,
         monies: List[MoneyDB] = Depends(MoneyOrm.get_today_by_user_id),
         principals: list = Depends(get_user_principals),
@@ -50,7 +50,7 @@ async def get_today_user_money(
 
 
 @router.get('/{user_id}/week')
-async def get_week_user_money(
+async def get_week_user_money_records(
         user_id: int,
         monies: List[MoneyDB] = Depends(MoneyOrm.get_week_by_user_id),
         principals: list = Depends(get_user_principals),
@@ -68,7 +68,7 @@ async def get_week_user_money(
 
 
 @router.get('/{user_id}/month')
-async def get_month_user_money(
+async def get_month_user_money_records(
         user_id: int,
         monies: List[MoneyDB] = Depends(MoneyOrm.get_month_by_user_id),
         principals: list = Depends(get_user_principals),
@@ -86,7 +86,7 @@ async def get_month_user_money(
 
 
 @router.get('/{user_id}/all')
-async def get_all_user_money(
+async def get_all_user_money_records(
         user_id: int,
         monies: List[MoneyDB] = Depends(MoneyOrm.get_all_by_user_id),
         principals: list = Depends(get_user_principals),
@@ -104,7 +104,7 @@ async def get_all_user_money(
 
 
 @router.post('/{user_id}')
-async def create_money(
+async def create_money_record(
         user_id: int,
         data: MoneyCreate,
         acls: list = Permission('create', MONEY_ACL)
@@ -114,7 +114,7 @@ async def create_money(
 
 
 @router.put('/{money_id}')
-async def edit_money(
+async def edit_money_record(
         money_id: int,
         data: MoneyCreate,
         money: MoneyDB = Depends(MoneyOrm.get_by_id),
@@ -132,7 +132,7 @@ async def edit_money(
 
 
 @router.delete('/{money_id}')
-async def delete_money(
+async def delete_money_record(
         money_id: int,
         money: MoneyDB = Depends(MoneyOrm.get_by_id),
         principles: list = Depends(get_user_principals),
