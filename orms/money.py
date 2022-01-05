@@ -1,11 +1,9 @@
 from datetime import date, timedelta
-from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy.orm import sessionmaker
 
-from exceptions.money import MoneyRecordDoesNotExist
 from core.database import engine
+from exceptions.money import MoneyRecordDoesNotExist
 from models.money import Money
 from schemas.money import MoneyCreate
 

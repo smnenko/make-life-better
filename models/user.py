@@ -1,7 +1,7 @@
 import bcrypt
 from fastapi_permissions import Allow
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
-from sqlalchemy.sql import func, expression
+from sqlalchemy.sql import expression, func
 
 from core.database import Base
 

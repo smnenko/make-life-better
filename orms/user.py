@@ -4,11 +4,8 @@ from datetime import datetime
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
-from exceptions.user import (
-    UserUniqueConstraintException,
-    UserDoesNotExists
-)
 from core.database import engine
+from exceptions.user import UserDoesNotExists, UserUniqueConstraintException
 from models.user import User
 from schemas.user import UserUpdate
 

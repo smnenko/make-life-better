@@ -1,7 +1,16 @@
 from enum import IntEnum
 
 from fastapi_permissions import Allow
-from sqlalchemy import Boolean, DECIMAL, Column, Date, Enum, ForeignKey, Integer, String
+from sqlalchemy import (
+    DECIMAL,
+    Boolean,
+    Column,
+    Date,
+    Enum,
+    ForeignKey,
+    Integer, 
+    String
+)
 from sqlalchemy.sql import func
 
 from core.database import Base
