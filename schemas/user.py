@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 from pydantic import BaseModel, EmailStr, validator
@@ -42,20 +42,27 @@ class BaseUserValidationSchema(BaseModel):
             return field
 
 
-class UserCreateSchema(BaseUserCreationSchema, BaseUserValidationSchema):
-    pass
-
-
-class UserRetrieveSchema(BaseModel):
+class User(BaseModel):
     id: int
     username: str
-    email: str
+    email: EmailStr
     first_name: Optional[str]
     last_name: Optional[str]
     birth_date: Optional[date]
 
+    class Config:
+        orm_mode = True
 
-class UserUpdateSchema(BaseUserValidationSchema):
+
+class UsersList(BaseModel):
+    users: List[User]
+
+
+class UserCreate(BaseUserCreationSchema, BaseUserValidationSchema):
+    pass
+
+
+class UserUpdate(BaseUserValidationSchema):
     first_name: str
     last_name: str
     birth_date: date

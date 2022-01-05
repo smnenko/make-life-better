@@ -1,13 +1,12 @@
 from decimal import Decimal
-from typing import List, Optional
+from typing import List
 
-from fastapi_permissions import Allow
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 from models.money import MoneyType
 
 
-class MoneyRetrieveSchema(BaseModel):
+class Money(BaseModel):
     id: int
     title: str
     amount: Decimal
@@ -18,26 +17,14 @@ class MoneyRetrieveSchema(BaseModel):
         orm_mode = True
 
 
-class MoneyCreateSchema(BaseModel):
+class MoneyList(BaseModel):
+    monies: List[Money]
+    total_incomes: Decimal = None
+    total_outlays: Decimal = None
+
+
+class MoneyCreate(BaseModel):
     title: str
     amount: Decimal
     type: MoneyType
     is_regular: bool
-
-
-class MoneyRetrieveAllSchema(BaseModel):
-    monies: List[MoneyRetrieveSchema]
-
-    def get_total_incomes(self):
-        return sum(
-            i.amount
-            for i in self.monies
-            if i.type == MoneyType.income.value
-        )
-
-    def get_total_outlays(self):
-        return sum(
-            i.amount
-            for i in self.monies
-            if i.type == MoneyType.outlay.value
-        )

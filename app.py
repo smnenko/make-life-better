@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 
-from routers import user, money
+from views import user, money
 
 app = FastAPI(debug=True)
 

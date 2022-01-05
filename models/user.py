@@ -22,7 +22,7 @@ class User(Base):
 
     @property
     def principals(self):
-        return [f'user:{self.id}', 'user:batch', f'admin:{self.is_admin}']
+        return [f'user:{self.id}', f'admin:{self.is_admin}']
 
     @property
     def full_name(self):
@@ -36,6 +36,7 @@ class User(Base):
 
     def __acl__(self):
         return [
+            (Allow, f'user:{self.id}', 'batch'),
             (Allow, f'user:{self.id}', 'view'),
             (Allow, f'user:{self.id}', 'edit'),
             (Allow, f'user:{self.id}', 'delete'),
@@ -44,4 +45,7 @@ class User(Base):
         ]
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>({self.email}, {self.username})'
+        return (
+            f'<{self.__class__.__name__}>'
+            f'({self.id}, {self.email}, {self.username})'
+        )
