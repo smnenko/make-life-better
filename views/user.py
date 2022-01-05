@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from exceptions.user import UserUniqueConstraintException, UserDoesNotExists
+from core.permissions import ADMIN_ACL, Permission
+from exceptions.user import UserDoesNotExists, UserUniqueConstraintException
 from models.user import User as UserDB
-from core.permissions import Permission, ADMIN_ACL
-from schemas.user import UserCreate, UserUpdate, UsersList, User
 from orms.user import UserOrm
+from schemas.user import User, UserCreate, UsersList, UserUpdate
 from utils.user_auth import authenticate, create_access_token
 
 router = APIRouter(prefix='/users', tags=['Users'])
