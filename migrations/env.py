@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from core.database import Base
 from models.user import User
 from models.money import Money
+from models.calorie import CalorieRecord, Dish
 
 
 # this is the Alembic Config object, which provides

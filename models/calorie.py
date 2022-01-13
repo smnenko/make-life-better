@@ -22,6 +22,7 @@ class Dish(Base):
 
 class CalorieRecord(Base):
     __tablename__ = 'calories'
+    id = Column(Integer, primary_key=True, unique=True, index=True)
     dish_id = Column(ForeignKey(Dish.id), nullable=False)
     user_id = Column(ForeignKey(User.id), nullable=False)
     amount = Column(Integer, nullable=False)
