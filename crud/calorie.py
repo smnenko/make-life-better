@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.database import engine
 from models.calorie import CalorieRecord
+from schemas.calorie import CalorieCreate, Calorie
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -19,6 +20,7 @@ class CalorieOrm:
             cls
             .session
             .query(CalorieRecord)
+            .options(joinedload('dish'))
             .filter(CalorieRecord.user_id == user_id)
             .order_by(CalorieRecord.date.asc())
         )
@@ -56,13 +58,13 @@ class CalorieOrm:
         )
 
     @classmethod
-    def create_calorie(cls, user_id: int, calorie: MoneyCreate):
+    def create_calorie(cls, user_id: int, calorie: CalorieCreate):
         pass
 
     @classmethod
-    def update_money(cls, money: Money, data: MoneyCreate):
+    def update_money(cls, calorie: Calorie, data: CalorieCreate):
         pass
 
     @classmethod
-    def delete_money(cls, money: Money):
+    def delete_money(cls, calorie: Calorie):
         pass

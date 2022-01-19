@@ -3,8 +3,6 @@ from typing import List
 
 from pydantic import BaseModel
 
-from models.calorie import Unit
-
 
 class Dish(BaseModel):
     id: int
@@ -24,7 +22,6 @@ class Calorie(BaseModel):
     id: int
     dish: Dish
     amount: int
-    unit: Unit
     calories: float
     date: date
 
@@ -35,7 +32,6 @@ class Calorie(BaseModel):
 class CalorieCreate(BaseModel):
     dish_id: int
     amount: int
-    unit: Unit
 
 
 class CalorieList(BaseModel):

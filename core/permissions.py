@@ -14,7 +14,7 @@ ADMIN_ACL = [
         (Allow, 'admin:True', 'edit'),
         (Allow, 'admin:True', 'delete')
 ]
-MONEY_ACL = [
+DEFAULT_ACL = [
     (Allow, Authenticated, 'batch'),
     (Allow, Authenticated, 'create'),
     (Allow, Authenticated, 'view'),
