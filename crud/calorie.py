@@ -3,8 +3,10 @@ from datetime import date, timedelta
 from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.database import engine
+from exceptions.calorie import CalorieRecordDoesNotExists
 from models.calorie import CalorieRecord
 from schemas.calorie import CalorieCreate, Calorie
+
 
 Session = sessionmaker()
 Session.configure(bind=engine)
@@ -59,12 +61,34 @@ class CalorieOrm:
 
     @classmethod
     def create_calorie(cls, user_id: int, calorie: CalorieCreate):
-        pass
+        calorie = CalorieRecord(
+            user_id=user_id,
+            dish_id=calorie.dish_id,
+            amount=calorie.amount,
+            date=date.today()
+        )
+
+        cls.session.add(calorie)
+        cls.session.commit()
+        cls.session.refresh(calorie)
+        return calorie
 
     @classmethod
-    def update_money(cls, calorie: Calorie, data: CalorieCreate):
-        pass
+    def update_calorie(cls, calorie: CalorieRecord, data: CalorieCreate):
+        calorie.dish_id = data.dish_id
+        calorie.amount = data.amount
+
+        cls.session.add(calorie)
+        cls.session.commit()
+        cls.session.refresh(calorie)
+        return calorie
 
     @classmethod
-    def delete_money(cls, calorie: Calorie):
-        pass
+    def delete_calorie(cls, calorie: CalorieRecord):
+        calorie = cls.session.query(Calorie).filter(Calorie.id == calorie.id)
+
+        if not isinstance(calorie.first(), Calorie):
+            raise CalorieRecordDoesNotExists('Record doesn\'t exists')
+
+        calorie.delete()
+        cls.session.commit()

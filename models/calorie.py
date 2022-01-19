@@ -17,7 +17,10 @@ class Dish(Base):
 class CalorieRecord(Base):
     __tablename__ = 'calories'
     id = Column(Integer, primary_key=True, unique=True, index=True)
-    dish = relationship('Dish', back_populates='dish')
-    user = relationship('User', back_populates='user')
+    dish_id = Column(Integer, ForeignKey(Dish.id), nullable=False)
+    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
     amount = Column(Integer, nullable=False)
     date = Column(Date, server_default=func.now(), nullable=False)
+
+    dish = relationship('Dish', back_populates='dish')
+    user = relationship('User', back_populates='user')
