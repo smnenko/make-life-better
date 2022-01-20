@@ -5,7 +5,7 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
 from core.database import engine
-from exceptions.user import UserDoesNotExists, UserUniqueConstraintException
+from core.exceptions import ObjectDoesNotExists, ObjectAlreadyExistsError
 from models.user import User
 from schemas.user import UserUpdate
 
@@ -53,7 +53,7 @@ class UserOrm:
             cls.session.rollback()
             field = f'{cls._get_field_from_error_msg(e.orig.args[0])}'
             detail = f'User with this already {field} exists'
-            raise UserUniqueConstraintException(field, detail)
+            raise ObjectAlreadyExistsError(field, detail)
 
     @classmethod
     def update_user(cls, user: User, data: UserUpdate):
@@ -83,13 +83,13 @@ class UserOrm:
             cls.session.rollback()
             field = cls._get_field_from_error_msg(e.orig.args[0])
             detail = f'User with this already {field} exists'
-            raise UserUniqueConstraintException(field, detail)
+            raise ObjectAlreadyExistsError(field, detail)
 
     @classmethod
     def delete_user(cls, user: User):
         user = cls.session.query(User).filter(User.id == user.id)
         if not isinstance(user.first(), User):
-            raise UserDoesNotExists('User with this id doesn\'t exists')
+            raise ObjectDoesNotExists('User with this id doesn\'t exists')
 
         user.delete()
         cls.session.commit()

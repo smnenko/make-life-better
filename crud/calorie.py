@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.database import engine
-from exceptions.calorie import CalorieRecordDoesNotExists
+from core.exceptions import ObjectDoesNotExists
 from models.calorie import CalorieRecord
 from schemas.calorie import CalorieCreate, Calorie
 
@@ -88,7 +88,7 @@ class CalorieOrm:
         calorie = cls.session.query(Calorie).filter(Calorie.id == calorie.id)
 
         if not isinstance(calorie.first(), Calorie):
-            raise CalorieRecordDoesNotExists('Record doesn\'t exists')
+            raise ObjectDoesNotExists('Calorie Record doesn\'t exists')
 
         calorie.delete()
         cls.session.commit()

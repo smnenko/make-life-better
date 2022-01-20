@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import bcrypt
 from jose import JWTError, jwt
 
-from exceptions.user import InvalidTokenError
+from core.exceptions import InvalidTokenError
 from crud.user import UserOrm
 
 SECRET_KEY = os.getenv('SECRET_KEY')

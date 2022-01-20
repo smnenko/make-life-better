@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi_permissions import has_permission, permission_exception
 
+from core.exceptions import ObjectDoesNotExists
 from core.permissions import DEFAULT_ACL, Permission, get_user_principals
-from exceptions.money import MoneyRecordDoesNotExist
 from models.money import Money as MoneyDB
 from crud.money import MoneyOrm
 from schemas.money import Money, MoneyCreate, MoneyList
@@ -122,7 +122,7 @@ async def edit_money_record(
     try:
         money = MoneyOrm.update_money(money, data)
         return Money.from_orm(money)
-    except MoneyRecordDoesNotExist as e:
+    except ObjectDoesNotExists as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
 
 
@@ -139,5 +139,5 @@ async def delete_money_record(
     try:
         MoneyOrm.delete_money(money)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except MoneyRecordDoesNotExist:
+    except ObjectDoesNotExists:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
