@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi_permissions import Allow, Authenticated, configure_permissions
 
-from exceptions.user import InvalidTokenError
+from core.exceptions import InvalidTokenError
 from models.user import User
 from utils.user_auth import get_by_token
 

@@ -22,5 +22,5 @@ class CalorieRecord(Base):
     amount = Column(Integer, nullable=False)
     date = Column(Date, server_default=func.now(), nullable=False)
 
-    dish = relationship('Dish', back_populates='dish')
-    user = relationship('User', back_populates='user')
+    dish = relationship('Dish', backref='dish')
+    user = relationship('User', backref='user')

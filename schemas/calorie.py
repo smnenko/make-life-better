@@ -1,5 +1,5 @@
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -31,10 +31,11 @@ class Calorie(BaseModel):
 
 class CalorieCreate(BaseModel):
     dish_id: int
+    date: date
     amount: int
 
 
 class CalorieList(BaseModel):
     calories: List[Calorie]
-    used: float
-    left: float
+    used: Optional[float]
+    left: Optional[float]

@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from typing import Optional
 
 from sqlalchemy.orm import sessionmaker, joinedload
 
@@ -17,38 +18,24 @@ class CalorieOrm:
     session = Session()
 
     @classmethod
-    def get_all_by_user_id(cls, user_id: int):
+    def get_all_by_user_id(
+            cls,
+            user_id: int,
+            start_date: Optional[date] = date(1970, 1, 1),
+            end_date: Optional[date] = date.today()
+    ):
         return (
             cls
             .session
             .query(CalorieRecord)
             .options(joinedload('dish'))
-            .filter(CalorieRecord.user_id == user_id)
+            .filter(
+                CalorieRecord.user_id == user_id,
+                CalorieRecord.date >= start_date,
+                CalorieRecord.date <= end_date
+            )
             .order_by(CalorieRecord.date.asc())
-        )
-
-    @classmethod
-    def get_today_by_user_id(cls, user_id: int):
-        return (
-            cls
-            .session
-            .query(CalorieRecord)
-            .filter(
-                CalorieRecord.user_id == user_id,
-                CalorieRecord.date == date.today()
-            ).order_by(CalorieRecord.date.asc())
-        )
-
-    @classmethod
-    def get_week_by_user_id(cls, user_id: int):
-        return (
-            cls
-            .session
-            .query(CalorieRecord)
-            .filter(
-                CalorieRecord.user_id == user_id,
-                CalorieRecord.date >= date.today() - timedelta(weeks=1)
-            ).order_by(CalorieRecord.date.asc())
+            .all()
         )
 
     @classmethod
@@ -57,6 +44,7 @@ class CalorieOrm:
             cls
             .session
             .query(CalorieRecord.id == calorie_id)
+            .first()
         )
 
     @classmethod
