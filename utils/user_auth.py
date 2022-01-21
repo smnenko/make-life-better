@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 import bcrypt
 from jose import JWTError, jwt
 
-from exceptions.user import InvalidTokenError
-from orms.user import UserOrm
+from core.exceptions import InvalidTokenError
+from crud.user import UserOrm
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"

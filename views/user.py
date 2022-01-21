@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from core.exceptions import ObjectAlreadyExistsError, ObjectDoesNotExists
 from core.permissions import ADMIN_ACL, Permission
-from exceptions.user import UserDoesNotExists, UserUniqueConstraintException
 from models.user import User as UserDB
-from orms.user import UserOrm
+from crud.user import UserOrm
 from schemas.user import User, UserCreate, UsersList, UserUpdate
 from utils.user_auth import authenticate, create_access_token
 
@@ -40,7 +40,7 @@ async def create_user(user: UserCreate):
             password=user.password
         )
         return User.from_orm(user)
-    except UserUniqueConstraintException as e:
+    except ObjectAlreadyExistsError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
 
@@ -66,7 +66,7 @@ async def update_user(
     try:
         user = UserOrm.update_user(user, data)
         return User.from_orm(user)
-    except UserUniqueConstraintException as e:
+    except ObjectAlreadyExistsError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
 
 
@@ -78,5 +78,5 @@ async def delete_user(
     try:
         UserOrm.delete_user(user)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except UserDoesNotExists:
+    except ObjectDoesNotExists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

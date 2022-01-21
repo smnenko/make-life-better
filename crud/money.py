@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from sqlalchemy.orm import sessionmaker
 
 from core.database import engine
-from exceptions.money import MoneyRecordDoesNotExist
+from core.exceptions import ObjectDoesNotExists
 from models.money import Money
 from schemas.money import MoneyCreate
 
@@ -96,7 +96,7 @@ class MoneyOrm:
     def delete_money(cls, money: Money):
         money = cls.session.query(Money).filter(Money.id == money.id)
         if not isinstance(money.first(), Money):
-            raise MoneyRecordDoesNotExist('Money record does\'t exist')
+            raise ObjectDoesNotExists('Money record does\'t exist')
 
         money.delete()
         cls.session.commit()

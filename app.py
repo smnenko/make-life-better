@@ -1,12 +1,13 @@
 import uvicorn
 from fastapi import FastAPI
 
-from views import user, money
+from views import user, money, calorie
 
 app = FastAPI(debug=True)
 
 app.include_router(user.router)
 app.include_router(money.router)
+app.include_router(calorie.router)
 
 
 if __name__ == '__main__':
