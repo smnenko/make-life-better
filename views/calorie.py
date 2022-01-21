@@ -1,10 +1,11 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status, Response
 from fastapi.routing import APIRouter
 from fastapi_permissions import has_permission, permission_exception
 
+from core.exceptions import ObjectDoesNotExists
 from core.permissions import get_user_principals, Permission, DEFAULT_ACL
 from crud.calorie import CalorieOrm
 from models.calorie import CalorieRecord
@@ -34,10 +35,49 @@ async def get_user_calorie_records(
     )
 
 
+@router.get('/{calorie_id}')
+async def get_calorie_record_by_id(
+        calorie_id: int,
+        calorie: Optional[CalorieRecord] = Permission('view', CalorieOrm.get_by_id)
+):
+    if not calorie:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            'Calorie record not found'
+        )
+    return Calorie.from_orm(calorie)
+
+
 @router.post('/{user_id}')
 async def create_calorie_record(
         user_id: int,
-        date: CalorieCreate,
+        data: CalorieCreate,
         acls: List = Permission('create', DEFAULT_ACL)
 ):
-    return {"status": 'ok'}
+    try:
+        calorie = CalorieOrm.create_calorie(user_id, data)
+        return Calorie.from_orm(calorie)
+    except ObjectDoesNotExists as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
+
+
+@router.put('/{calorie_id}')
+async def edit_calorie_record(
+        calorie_id: int,
+        data: CalorieCreate,
+        calorie: Optional[CalorieRecord] = Permission('edit', CalorieOrm.get_by_id)
+):
+    calorie = CalorieOrm.update_calorie(calorie, data)
+    return Calorie.from_orm(calorie)
+
+
+@router.delete('/{calorie_id}')
+async def delete_calorie_record(
+        calorie_id: int,
+        calorie: Optional[CalorieRecord] = Permission('delete', CalorieOrm.get_by_id)
+):
+    if not calorie:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+
+    CalorieOrm.delete_calorie(calorie)
+    return Response(status.HTTP_204_NO_CONTENT)

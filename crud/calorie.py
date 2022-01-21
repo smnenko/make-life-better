@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.database import engine
 from core.exceptions import ObjectDoesNotExists
+from crud.dish import DishOrm
 from models.calorie import CalorieRecord
 from schemas.calorie import CalorieCreate, Calorie
 
@@ -49,11 +50,15 @@ class CalorieOrm:
 
     @classmethod
     def create_calorie(cls, user_id: int, calorie: CalorieCreate):
+        dish = DishOrm.get_by_id(calorie.dish_id)
+        if not dish:
+            raise ObjectDoesNotExists('Dish doesn\'t exists')
+
         calorie = CalorieRecord(
             user_id=user_id,
             dish_id=calorie.dish_id,
             amount=calorie.amount,
-            date=date.today()
+            date=calorie.date
         )
 
         cls.session.add(calorie)
@@ -73,10 +78,5 @@ class CalorieOrm:
 
     @classmethod
     def delete_calorie(cls, calorie: CalorieRecord):
-        calorie = cls.session.query(Calorie).filter(Calorie.id == calorie.id)
-
-        if not isinstance(calorie.first(), Calorie):
-            raise ObjectDoesNotExists('Calorie Record doesn\'t exists')
-
-        calorie.delete()
+        cls.session.delete(calorie)
         cls.session.commit()

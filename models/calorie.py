@@ -1,3 +1,4 @@
+from fastapi_permissions import Allow
 from sqlalchemy import Column, String, ForeignKey, Integer, Text, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -24,3 +25,13 @@ class CalorieRecord(Base):
 
     dish = relationship('Dish', backref='dish')
     user = relationship('User', backref='user')
+
+    def __acl__(self):
+        return [
+            (Allow, f'user:{self.user_id}', 'view'),
+            (Allow, f'user:{self.user_id}', 'edit'),
+            (Allow, f'user:{self.user_id}', 'delete'),
+            (Allow, 'admin:True', 'view'),
+            (Allow, 'admin:True', 'edit'),
+            (Allow, 'admin:True', 'delete')
+        ]
