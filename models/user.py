@@ -1,9 +1,9 @@
 import bcrypt
 from fastapi_permissions import Allow
 from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
-from sqlalchemy.sql import func, expression
+from sqlalchemy.sql import expression, func
 
-from models import Base
+from core.database import Base
 
 
 class User(Base):
@@ -36,6 +36,7 @@ class User(Base):
 
     def __acl__(self):
         return [
+            (Allow, f'user:{self.id}', 'batch'),
             (Allow, f'user:{self.id}', 'view'),
             (Allow, f'user:{self.id}', 'edit'),
             (Allow, f'user:{self.id}', 'delete'),
@@ -44,4 +45,7 @@ class User(Base):
         ]
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>({self.email}, {self.username})'
+        return (
+            f'<{self.__class__.__name__}>'
+            f'({self.id}, {self.email}, {self.username})'
+        )
