@@ -16,50 +16,20 @@ class MoneyOrm:
     session = Session()
 
     @classmethod
-    def get_all_by_user_id(cls, user_id: int):
-        return (
-            cls
-            .session
-            .query(Money)
-            .filter(Money.user_id == user_id)
-            .order_by(Money.id.desc())
-        )
-
-    @classmethod
-    def get_today_by_user_id(cls, user_id: int):
+    def get_all_by_user_id(
+            cls,
+            user_id: int,
+            start_date: date = date(1970, 1, 1),
+            end_date: date = date.today()
+    ):
         return (
             cls
             .session
             .query(Money)
             .filter(
                 Money.user_id == user_id,
-                Money.date == date.today()
-            )
-            .order_by(Money.id.desc())
-        )
-
-    @classmethod
-    def get_week_by_user_id(cls, user_id: int):
-        return (
-            cls
-            .session
-            .query(Money)
-            .filter(
-                Money.user_id == user_id,
-                Money.date >= date.today() - timedelta(weeks=1)
-            )
-            .order_by(Money.id.desc())
-        )
-
-    @classmethod
-    def get_month_by_user_id(cls, user_id: int):
-        return (
-            cls
-            .session
-            .query(Money)
-            .filter(
-                Money.user_id == user_id,
-                Money.date >= date.today() - timedelta(days=30)
+                Money.date >= start_date,
+                Money.date <= end_date
             )
             .order_by(Money.id.desc())
         )

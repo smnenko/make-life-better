@@ -15,7 +15,7 @@ from utils.calorie_calculator import CalorieCalculator
 router = APIRouter(prefix='/calorie', tags=['Calorie'])
 
 
-@router.get('/{user_id}')
+@router.get('/user/{user_id}')
 async def get_user_calorie_records(
         user_id: int,
         start_date: Optional[date] = None,

@@ -1,4 +1,5 @@
-from typing import List
+from datetime import date
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi_permissions import has_permission, permission_exception
@@ -16,7 +17,7 @@ router = APIRouter(prefix='/money', tags=['Money'])
 @router.get('/{money_id}')
 async def get_money_record(
         money_id: int,
-        money: Money = Permission('view', MoneyOrm.get_by_id)
+        money: Optional[Money] = Permission('view', MoneyOrm.get_by_id)
 ):
     if not money:
         raise HTTPException(
@@ -26,66 +27,14 @@ async def get_money_record(
     return Money.from_orm(money)
 
 
-@router.get('/{user_id}/day')
-async def get_today_user_money_records(
-        user_id: int,
-        monies: List[MoneyDB] = Depends(MoneyOrm.get_today_by_user_id),
-        principals: list = Depends(get_user_principals),
-        acls: List = Permission('batch', DEFAULT_ACL)
-):
-    if not all(has_permission(principals, 'view', i) for i in monies):
-        raise permission_exception
-
-    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
-    return MoneyList(
-        monies=[Money.from_orm(i) for i in monies],
-        total_incomes=incomes,
-        total_outlays=outlays
-    )
-
-
-@router.get('/{user_id}/week')
-async def get_week_user_money_records(
-        user_id: int,
-        monies: List[MoneyDB] = Depends(MoneyOrm.get_week_by_user_id),
-        principals: List = Depends(get_user_principals),
-        acls: List = Permission('batch', DEFAULT_ACL)
-):
-    if not all(has_permission(principals, 'view', i) for i in monies):
-        raise permission_exception
-
-    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
-    return MoneyList(
-        monies=[Money.from_orm(i) for i in monies],
-        total_incomes=incomes,
-        total_outlays=outlays
-    )
-
-
-@router.get('/{user_id}/month')
-async def get_month_user_money_records(
-        user_id: int,
-        monies: List[MoneyDB] = Depends(MoneyOrm.get_month_by_user_id),
-        principals: List = Depends(get_user_principals),
-        acls: list = Permission('batch', DEFAULT_ACL)
-):
-    if not all(has_permission(principals, 'view', i) for i in monies):
-        raise permission_exception
-
-    incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
-    return MoneyList(
-        monies=[Money.from_orm(i) for i in monies],
-        total_incomes=incomes,
-        total_outlays=outlays
-    )
-
-
-@router.get('/{user_id}/all')
+@router.get('/user/{user_id}')
 async def get_all_user_money_records(
         user_id: int,
+        start_date: date,
+        end_date: date,
         monies: List[MoneyDB] = Depends(MoneyOrm.get_all_by_user_id),
         principals: List = Depends(get_user_principals),
-        acls: list = Permission('batch', DEFAULT_ACL)
+        acls: List = Permission('batch', DEFAULT_ACL)
 ):
     if not all(has_permission(principals, 'view', i) for i in monies):
         raise permission_exception
@@ -112,7 +61,7 @@ async def create_money_record(
 async def edit_money_record(
         money_id: int,
         data: MoneyCreate,
-        money: MoneyDB = Depends(MoneyOrm.get_by_id),
+        money: Optional[MoneyDB] = Depends(MoneyOrm.get_by_id),
         principles: list = Depends(get_user_principals),
         acls: List = Permission('edit', DEFAULT_ACL)
 ):
@@ -129,7 +78,7 @@ async def edit_money_record(
 @router.delete('/{money_id}')
 async def delete_money_record(
         money_id: int,
-        money: MoneyDB = Depends(MoneyOrm.get_by_id),
+        money: Optional[MoneyDB] = Depends(MoneyOrm.get_by_id),
         principles: List = Depends(get_user_principals),
         acls: List = Permission('delete', DEFAULT_ACL)
 ):
