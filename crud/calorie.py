@@ -44,7 +44,8 @@ class CalorieOrm:
         return (
             cls
             .session
-            .query(CalorieRecord.id == calorie_id)
+            .query(CalorieRecord)
+            .filter(CalorieRecord.id == calorie_id)
             .first()
         )
 
