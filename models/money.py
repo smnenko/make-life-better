@@ -22,7 +22,7 @@ class MoneyType(IntEnum):
     outlay = 2
 
 
-class Money(Base):
+class MoneyRecord(Base):
     __tablename__ = 'money'
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)

@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi_permissions import has_permission, permission_exception
 
 from core.exceptions import ObjectDoesNotExists
-from core.permissions import DEFAULT_ACL, Permission, get_user_principals
-from models.money import Money as MoneyDB
-from crud.money import MoneyOrm
+from core.permissions import DEFAULT_ACL, Permission, get_user_principles
+from models.money import MoneyRecord
+from repository.money import MoneyRepository
 from schemas.money import Money, MoneyCreate, MoneyList
 from utils.money_calculator import MoneyTotalsCalculator
 
@@ -17,14 +17,14 @@ router = APIRouter(prefix='/money', tags=['Money'])
 @router.get('/{money_id}')
 async def get_money_record(
         money_id: int,
-        money: Optional[Money] = Permission('view', MoneyOrm.get_by_id)
+        money: Optional[MoneyRecord] = Permission('view', MoneyRepository.get_by_id)
 ):
     if not money:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             'Money record not found'
         )
-    return Money.from_orm(money)
+    return MoneyRecord.from_orm(money)
 
 
 @router.get('/user/{user_id}')
@@ -32,8 +32,8 @@ async def get_all_user_money_records(
         user_id: int,
         start_date: date,
         end_date: date,
-        monies: List[MoneyDB] = Depends(MoneyOrm.get_all_by_user_id),
-        principals: List = Depends(get_user_principals),
+        monies: List[MoneyRecord] = Depends(MoneyRepository.get_all_by_user_id),
+        principals: List = Depends(get_user_principles),
         acls: List = Permission('batch', DEFAULT_ACL)
 ):
     if not all(has_permission(principals, 'view', i) for i in monies):
@@ -53,7 +53,7 @@ async def create_money_record(
         data: MoneyCreate,
         acls: List = Permission('create', DEFAULT_ACL)
 ):
-    money = MoneyOrm.create_money(user_id, data)
+    money = MoneyRepository.create_money(user_id, data)
     return Money.from_orm(money)
 
 
@@ -61,15 +61,15 @@ async def create_money_record(
 async def edit_money_record(
         money_id: int,
         data: MoneyCreate,
-        money: Optional[MoneyDB] = Depends(MoneyOrm.get_by_id),
-        principles: list = Depends(get_user_principals),
+        money: Optional[MoneyRecord] = Depends(MoneyRepository.get_by_id),
+        principles: List = Depends(get_user_principles),
         acls: List = Permission('edit', DEFAULT_ACL)
 ):
     if not has_permission(principles, 'delete', money):
         raise permission_exception
 
     try:
-        money = MoneyOrm.update_money(money, data)
+        money = MoneyRepository.update_money(money, data)
         return Money.from_orm(money)
     except ObjectDoesNotExists as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
@@ -78,15 +78,15 @@ async def edit_money_record(
 @router.delete('/{money_id}')
 async def delete_money_record(
         money_id: int,
-        money: Optional[MoneyDB] = Depends(MoneyOrm.get_by_id),
-        principles: List = Depends(get_user_principals),
+        money: Optional[MoneyRecord] = Depends(MoneyRepository.get_by_id),
+        principles: List = Depends(get_user_principles),
         acls: List = Permission('delete', DEFAULT_ACL)
 ):
     if not has_permission(principles, 'delete', money):
         raise permission_exception
 
     try:
-        MoneyOrm.delete_money(money)
+        MoneyRepository.delete_money(money)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ObjectDoesNotExists:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)

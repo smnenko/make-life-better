@@ -23,9 +23,9 @@ DEFAULT_ACL = [
 ]
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
-        return get_by_token(token)
+        return await get_by_token(token)
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,8 +33,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
 
 
-def get_user_principals(user: User = Depends(get_current_user)):
+def get_user_principles(user: User = Depends(get_current_user)):
     return user.principals + [Authenticated]
 
 
-Permission = configure_permissions(get_user_principals)
+Permission = configure_permissions(get_user_principles)

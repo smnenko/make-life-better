@@ -1,17 +1,17 @@
-from datetime import date, timedelta
+from datetime import date
 
 from sqlalchemy.orm import sessionmaker
 
 from core.database import engine
 from core.exceptions import ObjectDoesNotExists
-from models.money import Money
+from models.money import MoneyRecord
 from schemas.money import MoneyCreate
 
 Session = sessionmaker()
 Session.configure(bind=engine)
 
 
-class MoneyOrm:
+class MoneyRepository:
 
     session = Session()
 
@@ -25,22 +25,22 @@ class MoneyOrm:
         return (
             cls
             .session
-            .query(Money)
+            .query(MoneyRecord)
             .filter(
-                Money.user_id == user_id,
-                Money.date >= start_date,
-                Money.date <= end_date
+                MoneyRecord.user_id == user_id,
+                MoneyRecord.date >= start_date,
+                MoneyRecord.date <= end_date
             )
-            .order_by(Money.id.desc())
+            .order_by(MoneyRecord.id.desc())
         )
 
     @classmethod
     def get_by_id(cls, money_id):
-        return cls.session.query(Money).filter(Money.id == money_id).first()
+        return cls.session.query(MoneyRecord).filter(MoneyRecord.id == money_id).first()
 
     @classmethod
     def create_money(cls, user_id: int, money: MoneyCreate):
-        money = Money(
+        money = MoneyRecord(
             user_id=user_id,
             **money.dict(),
             date=date.today()
@@ -51,7 +51,7 @@ class MoneyOrm:
         return money
 
     @classmethod
-    def update_money(cls, money: Money, data: MoneyCreate):
+    def update_money(cls, money: MoneyRecord, data: MoneyCreate):
         money.is_regular = data.is_regular
         money.title = data.title
         money.amount = data.amount
@@ -63,9 +63,9 @@ class MoneyOrm:
         return money
 
     @classmethod
-    def delete_money(cls, money: Money):
-        money = cls.session.query(Money).filter(Money.id == money.id)
-        if not isinstance(money.first(), Money):
+    def delete_money(cls, money: MoneyRecord):
+        money = cls.session.query(MoneyRecord).filter(MoneyRecord.id == money.id)
+        if not isinstance(money.first(), MoneyRecord):
             raise ObjectDoesNotExists('Money record does\'t exist')
 
         money.delete()

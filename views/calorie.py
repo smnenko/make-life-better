@@ -6,8 +6,8 @@ from fastapi.routing import APIRouter
 from fastapi_permissions import has_permission, permission_exception
 
 from core.exceptions import ObjectDoesNotExists
-from core.permissions import get_user_principals, Permission, DEFAULT_ACL
-from crud.calorie import CalorieOrm
+from core.permissions import get_user_principles, Permission, DEFAULT_ACL
+from repository.calorie import CalorieRepository
 from models.calorie import CalorieRecord
 from schemas.calorie import Calorie, CalorieList, CalorieCreate
 from utils.calorie_calculator import CalorieCalculator
@@ -20,8 +20,8 @@ async def get_user_calorie_records(
         user_id: int,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
-        calories: List[CalorieRecord] = Depends(CalorieOrm.get_all_by_user_id),
-        principles: List = Depends(get_user_principals),
+        calories: List[CalorieRecord] = Depends(CalorieRepository.get_all_by_user_id),
+        principles: List = Depends(get_user_principles),
         acls: List = Permission('batch', DEFAULT_ACL)
 ):
     if not all(has_permission(principles, 'view', i) for i in calories):
@@ -38,7 +38,7 @@ async def get_user_calorie_records(
 @router.get('/{calorie_id}')
 async def get_calorie_record_by_id(
         calorie_id: int,
-        calorie: Optional[CalorieRecord] = Permission('view', CalorieOrm.get_by_id)
+        calorie: Optional[CalorieRecord] = Permission('view', CalorieRepository.get_by_id)
 ):
     if not calorie:
         raise HTTPException(
@@ -55,7 +55,7 @@ async def create_calorie_record(
         acls: List = Permission('create', DEFAULT_ACL)
 ):
     try:
-        calorie = CalorieOrm.create_calorie(user_id, data)
+        calorie = CalorieRepository.create_calorie(user_id, data)
         return Calorie.from_orm(calorie)
     except ObjectDoesNotExists as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
@@ -65,19 +65,19 @@ async def create_calorie_record(
 async def edit_calorie_record(
         calorie_id: int,
         data: CalorieCreate,
-        calorie: Optional[CalorieRecord] = Permission('edit', CalorieOrm.get_by_id)
+        calorie: Optional[CalorieRecord] = Permission('edit', CalorieRepository.get_by_id)
 ):
-    calorie = CalorieOrm.update_calorie(calorie, data)
+    calorie = CalorieRepository.update_calorie(calorie, data)
     return Calorie.from_orm(calorie)
 
 
 @router.delete('/{calorie_id}')
 async def delete_calorie_record(
         calorie_id: int,
-        calorie: Optional[CalorieRecord] = Permission('delete', CalorieOrm.get_by_id)
+        calorie: Optional[CalorieRecord] = Permission('delete', CalorieRepository.get_by_id)
 ):
     if not calorie:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
 
-    CalorieOrm.delete_calorie(calorie)
+    CalorieRepository.delete_calorie(calorie)
     return Response(status.HTTP_204_NO_CONTENT)

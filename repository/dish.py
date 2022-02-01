@@ -7,7 +7,7 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 
 
-class DishOrm:
+class DishRepository:
 
     session = Session()
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.database import engine
 from core.exceptions import ObjectDoesNotExists
-from crud.dish import DishOrm
+from repository.dish import DishRepository
 from models.calorie import CalorieRecord
 from schemas.calorie import CalorieCreate, Calorie
 
@@ -14,7 +14,7 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 
 
-class CalorieOrm:
+class CalorieRepository:
 
     session = Session()
 
@@ -51,7 +51,7 @@ class CalorieOrm:
 
     @classmethod
     def create_calorie(cls, user_id: int, calorie: CalorieCreate):
-        dish = DishOrm.get_by_id(calorie.dish_id)
+        dish = DishRepository.get_by_id(calorie.dish_id)
         if not dish:
             raise ObjectDoesNotExists('Dish doesn\'t exists')
 
