@@ -13,7 +13,7 @@ class CalorieCalculator:
     def get_used_calories(self):
         if self.calories:
             self.used_calories = sum([
-                i.amount * i.dish.calorie / 100
+                i.amount * i.dish.calorie_count / 100
                 for i in self.calories
             ])
             return self.used_calories
@@ -24,7 +24,7 @@ class CalorieCalculator:
         if dates:
             start_date, end_date = min(dates), max(dates)
             self.left_calories = (
-                (end_date - start_date).days * 2000 - self.used_calories
+                (end_date - start_date).days * 2000 + 2000 - self.used_calories
                 if self.used_calories else None
             )
             return self.left_calories

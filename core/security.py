@@ -4,15 +4,16 @@ from datetime import datetime, timedelta
 import bcrypt
 from jose import JWTError, jwt
 
+from core.database import async_session
 from core.exceptions import InvalidTokenError
-from crud.user import UserOrm
+from repository.user import UserRepository
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-def get_by_token(token: str):
+async def get_by_token(token: str):
     credentials_exception = InvalidTokenError(
         'Could not validate credentials'
     )
@@ -24,10 +25,12 @@ def get_by_token(token: str):
     except JWTError:
         raise credentials_exception
 
-    user = UserOrm.get_by_username(username)
-    if user is None or not user.is_active:
-        raise credentials_exception
-    return user
+    async with async_session() as session:
+        user = await UserRepository(session).get_by_username(username)
+        if user is None or not user.is_active:
+            raise credentials_exception
+
+        return user
 
 
 def verify_password(hashed_password: str, password: str):
@@ -37,14 +40,16 @@ def verify_password(hashed_password: str, password: str):
     )
 
 
-def authenticate(username: str, password: str):
-    user = UserOrm.get_by_username(username)
-    if not user:
-        return False
-    if not verify_password(user.password, password):
-        return False
+async def authenticate(username: str, password: str):
+    async with async_session() as session:
+        user = await UserRepository(session).get_by_username(username)
 
-    return user
+        if not user:
+            return False
+        if not verify_password(user.password, password):
+            return False
+
+        return user
 
 
 def create_access_token(

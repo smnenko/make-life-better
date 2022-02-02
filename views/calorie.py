@@ -5,79 +5,114 @@ from fastapi import Depends, HTTPException, status, Response
 from fastapi.routing import APIRouter
 from fastapi_permissions import has_permission, permission_exception
 
+from core.dependencies import get_calorie_repository
 from core.exceptions import ObjectDoesNotExists
-from core.permissions import get_user_principals, Permission, DEFAULT_ACL
-from crud.calorie import CalorieOrm
-from models.calorie import CalorieRecord
+from core.permissions import get_user_principles, Permission, DEFAULT_ACL
+from repository.calorie import CalorieRepository
 from schemas.calorie import Calorie, CalorieList, CalorieCreate
 from utils.calorie_calculator import CalorieCalculator
 
 router = APIRouter(prefix='/calorie', tags=['Calorie'])
 
 
-@router.get('/{user_id}')
+@router.get(
+    path='/user/{user_id}',
+    response_model=CalorieList,
+    description='Method returns calories list for user'
+)
 async def get_user_calorie_records(
         user_id: int,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        calories: List[CalorieRecord] = Depends(CalorieOrm.get_all_by_user_id),
-        principles: List = Depends(get_user_principals),
-        acls: List = Permission('batch', DEFAULT_ACL)
+        start_date: Optional[date] = date(1970, 1, 1),
+        end_date: Optional[date] = date.today(),
+        repository: CalorieRepository = Depends(get_calorie_repository),
+        principles: List = Depends(get_user_principles),
 ):
+    calories = await repository.get_all_by_user_id(user_id, start_date, end_date)
     if not all(has_permission(principles, 'view', i) for i in calories):
         raise permission_exception
 
     used_calories, left_calories = CalorieCalculator(calories).get_statistics()
-    return CalorieList(
-        calories=[Calorie.from_orm(i) for i in calories],
-        used=used_calories,
-        left=left_calories
-    )
+    return {
+        'calories': calories,
+        'used': used_calories,
+        'left': left_calories
+    }
 
 
-@router.get('/{calorie_id}')
+@router.get(
+    path='/{calorie_id}',
+    response_model=Calorie,
+    description='Method returns calorie by id'
+)
 async def get_calorie_record_by_id(
         calorie_id: int,
-        calorie: Optional[CalorieRecord] = Permission('view', CalorieOrm.get_by_id)
+        repository: CalorieRepository = Depends(get_calorie_repository),
+        principles: List = Depends(get_user_principles)
 ):
-    if not calorie:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            'Calorie record not found'
-        )
-    return Calorie.from_orm(calorie)
+    try:
+        calorie = repository.get_by_id(calorie_id)
+    except ObjectDoesNotExists as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=e.message)
+    if not has_permission(principles, 'view', calorie):
+        raise permission_exception
+
+    return calorie
 
 
-@router.post('/{user_id}')
+@router.post(
+    path='/{user_id}',
+    response_model=Calorie,
+    description='Method creates calorie record and returns it'
+)
 async def create_calorie_record(
         user_id: int,
         data: CalorieCreate,
-        acls: List = Permission('create', DEFAULT_ACL)
+        acls: List = Permission('create', DEFAULT_ACL),
+        repository: CalorieRepository = Depends(get_calorie_repository)
 ):
     try:
-        calorie = CalorieOrm.create_calorie(user_id, data)
-        return Calorie.from_orm(calorie)
+        return await repository.create_calorie(user_id, data)
     except ObjectDoesNotExists as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
 
 
-@router.put('/{calorie_id}')
+@router.put(
+    path='/{calorie_id}',
+    response_model=Calorie,
+    description='Method updates calorie record and returns it'
+)
 async def edit_calorie_record(
         calorie_id: int,
         data: CalorieCreate,
-        calorie: Optional[CalorieRecord] = Permission('edit', CalorieOrm.get_by_id)
+        repository: CalorieRepository = Depends(get_calorie_repository),
+        principles: List = Depends(get_user_principles)
 ):
-    calorie = CalorieOrm.update_calorie(calorie, data)
-    return Calorie.from_orm(calorie)
+    try:
+        calorie = await repository.get_by_id(calorie_id)
+    except ObjectDoesNotExists as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
+    if not has_permission(principles, 'edit', calorie):
+        raise permission_exception
+
+    return await repository.update_calorie(calorie, data)
 
 
-@router.delete('/{calorie_id}')
+@router.delete(
+    path='/{calorie_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    description='Method allows delete calorie record from database'
+)
 async def delete_calorie_record(
         calorie_id: int,
-        calorie: Optional[CalorieRecord] = Permission('delete', CalorieOrm.get_by_id)
+        repository: CalorieRepository = Depends(get_calorie_repository),
+        principles: List = Depends(get_user_principles)
 ):
-    if not calorie:
+    try:
+        calorie = await repository.get_by_id(calorie_id)
+    except ObjectDoesNotExists:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    if not has_permission(principles, 'delete', calorie):
+        raise permission_exception
 
-    CalorieOrm.delete_calorie(calorie)
-    return Response(status.HTTP_204_NO_CONTENT)
+    await repository.delete_calorie(calorie)
