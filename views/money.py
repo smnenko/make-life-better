@@ -98,7 +98,7 @@ async def edit_money_record(
 async def delete_money_record(
         money_id: int,
         repository: MoneyRepository = Depends(get_money_repository),
-        principles: List = Depends(get_user_principles),
+        principles: List = Depends(get_user_principles)
 ):
     try:
         money = await repository.get_by_id(money_id)
