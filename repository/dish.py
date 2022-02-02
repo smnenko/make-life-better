@@ -1,16 +1,14 @@
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, exists
+from sqlalchemy.orm import Session
 
-from core.database import engine
 from models.calorie import Dish
-
-Session = sessionmaker()
-Session.configure(bind=engine)
 
 
 class DishRepository:
 
-    session = Session()
+    def __init__(self, session: Session):
+        self.session = session
 
-    @classmethod
-    def get_by_id(cls, dish_id: int):
-        return cls.session.query(Dish).filter(Dish.id == dish_id).first()
+    async def get_by_id(self, dish_id: int):
+        query = select(Dish).where(Dish.id == dish_id)
+        return (await self.session.execute(query)).scalar()

@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 import sqlalchemy
 from sqlalchemy import select
@@ -17,8 +18,8 @@ class MoneyRepository:
     async def get_all_by_user_id(
             self,
             user_id: int,
-            start_date: date,
-            end_date: date
+            start_date: Optional[date],
+            end_date: Optional[date]
     ):
         query = (
             select(MoneyRecord)
@@ -34,7 +35,7 @@ class MoneyRepository:
     async def get_by_id(self, money_id):
         query = select(MoneyRecord).where(MoneyRecord.id == money_id)
         try:
-            return (await self.session.execute(query)).scalars().one()
+            return (await self.session.execute(query)).scalar()
         except sqlalchemy.exc.NoResultFound:
             raise ObjectDoesNotExists('Money record doesn\'t exists')
 

@@ -68,12 +68,15 @@ class UserRepository:
 
     async def get_by_username(self, username: str):
         query = select(User).where(User.username == username)
-        return (await self.session.execute(query)).scalars().one()
+        try:
+            return (await self.session.execute(query)).scalar()
+        except sqlalchemy.exc.NoResultFound:
+            raise ObjectDoesNotExists('User doesn\'t exists')
 
     async def get_by_id(self, user_id: int):
         query = select(User).where(User.id == user_id)
         try:
-            return (await self.session.execute(query)).scalars().one()
+            return (await self.session.execute(query)).scalar()
         except sqlalchemy.exc.NoResultFound:
             raise ObjectDoesNotExists('User doesn\'t exists')
 

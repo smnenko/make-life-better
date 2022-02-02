@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi_permissions import has_permission, permission_exception
 
 from core.dependencies import get_user_repository
@@ -88,6 +88,7 @@ async def update_user(
 @router.delete(
     path='/{user_id}',
     status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
     description='Method doesn\'t return anything but a status'
 )
 async def delete_user(

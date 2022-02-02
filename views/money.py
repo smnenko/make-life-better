@@ -1,7 +1,7 @@
 from datetime import date
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi_permissions import has_permission, permission_exception
 
 from core.dependencies import get_money_repository
@@ -21,8 +21,8 @@ router = APIRouter(prefix='/money', tags=['Money'])
 )
 async def get_all_user_money_records(
         user_id: int,
-        start_date: date = date(1970, 1, 1),
-        end_date: date = date.today(),
+        start_date: Optional[date] = date(1970, 1, 1),
+        end_date: Optional[date] = date.today(),
         repository: MoneyRepository = Depends(get_money_repository),
         principals: List = Depends(get_user_principles),
 ):
@@ -92,6 +92,7 @@ async def edit_money_record(
 @router.delete(
     path='/{money_id}',
     status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
     description='Method allows to delete money record entity from database'
 )
 async def delete_money_record(

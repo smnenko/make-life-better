@@ -1,83 +1,72 @@
-from datetime import date, timedelta
+from datetime import date
 from typing import Optional
 
-from sqlalchemy.orm import sessionmaker, joinedload
+import sqlalchemy
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, Session
 
-from core.database import engine
 from core.exceptions import ObjectDoesNotExists
 from repository.dish import DishRepository
 from models.calorie import CalorieRecord
-from schemas.calorie import CalorieCreate, Calorie
-
-
-Session = sessionmaker()
-Session.configure(bind=engine)
+from schemas.calorie import CalorieCreate
 
 
 class CalorieRepository:
 
-    session = Session()
+    def __init__(self, session: Session):
+        self.session = session
 
-    @classmethod
-    def get_all_by_user_id(
-            cls,
+    async def get_all_by_user_id(
+            self,
             user_id: int,
-            start_date: Optional[date] = date(1970, 1, 1),
-            end_date: Optional[date] = date.today()
+            start_date: Optional[date],
+            end_date: Optional[date]
     ):
-        return (
-            cls
-            .session
-            .query(CalorieRecord)
-            .options(joinedload('dish'))
-            .filter(
+        query = (
+            select(CalorieRecord)
+            .where(
                 CalorieRecord.user_id == user_id,
                 CalorieRecord.date >= start_date,
                 CalorieRecord.date <= end_date
             )
+            .options(joinedload('dish'))
             .order_by(CalorieRecord.date.asc())
-            .all()
         )
+        return (await self.session.execute(query)).scalars().all()
 
-    @classmethod
-    def get_by_id(cls, calorie_id):
-        return (
-            cls
-            .session
-            .query(CalorieRecord)
-            .filter(CalorieRecord.id == calorie_id)
-            .first()
-        )
+    async def get_by_id(self, calorie_id: int):
+        query = select(CalorieRecord).where(CalorieRecord.id == calorie_id)
+        try:
+            return (await self.session.execute(query)).scalar()
+        except sqlalchemy.exc.NoResultFound:
+            raise ObjectDoesNotExists('Calorie record doesn\'t exists')
 
-    @classmethod
-    def create_calorie(cls, user_id: int, calorie: CalorieCreate):
-        dish = DishRepository.get_by_id(calorie.dish_id)
-        if not dish:
+    async def create_calorie(self, user_id: int, calorie: CalorieCreate):
+        try:
+            calorie = CalorieRecord(
+                user_id=user_id,
+                dish_id=calorie.dish_id,
+                amount=calorie.amount,
+                date=calorie.date
+            )
+
+            self.session.add(calorie)
+            await self.session.commit()
+            await self.session.refresh(calorie)
+            return calorie
+        except sqlalchemy.exc.IntegrityError:
+            await self.session.rollback()
             raise ObjectDoesNotExists('Dish doesn\'t exists')
 
-        calorie = CalorieRecord(
-            user_id=user_id,
-            dish_id=calorie.dish_id,
-            amount=calorie.amount,
-            date=calorie.date
-        )
-
-        cls.session.add(calorie)
-        cls.session.commit()
-        cls.session.refresh(calorie)
-        return calorie
-
-    @classmethod
-    def update_calorie(cls, calorie: CalorieRecord, data: CalorieCreate):
+    async def update_calorie(self, calorie: CalorieRecord, data: CalorieCreate):
         calorie.dish_id = data.dish_id
         calorie.amount = data.amount
 
-        cls.session.add(calorie)
-        cls.session.commit()
-        cls.session.refresh(calorie)
+        self.session.add(calorie)
+        await self.session.commit()
+        await self.session.refresh(calorie)
         return calorie
 
-    @classmethod
-    def delete_calorie(cls, calorie: CalorieRecord):
-        cls.session.delete(calorie)
-        cls.session.commit()
+    async def delete_calorie(self, calorie: CalorieRecord):
+        await self.session.delete(calorie)
+        await self.session.commit()
