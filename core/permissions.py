@@ -3,17 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi_permissions import Allow, Authenticated, configure_permissions
 
 from core.exceptions import InvalidTokenError
+from core.security import get_by_token
 from models.user import User
-from utils.user_auth import get_by_token
 
-oauth2_scheme = OAuth2PasswordBearer('users/token')
 
-ADMIN_ACL = [
-        (Allow, 'admin:True', 'create'),
-        (Allow, 'admin:True', 'view'),
-        (Allow, 'admin:True', 'edit'),
-        (Allow, 'admin:True', 'delete')
-]
+oauth2_scheme = OAuth2PasswordBearer('api/v1/token')
+
 DEFAULT_ACL = [
     (Allow, Authenticated, 'batch'),
     (Allow, Authenticated, 'create'),
@@ -23,9 +18,9 @@ DEFAULT_ACL = [
 ]
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
-        return get_by_token(token)
+        return await get_by_token(token)
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,8 +28,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
 
 
-def get_user_principals(user: User = Depends(get_current_user)):
+def get_user_principles(user: User = Depends(get_current_user)):
     return user.principals + [Authenticated]
 
 
-Permission = configure_permissions(get_user_principals)
+Permission = configure_permissions(get_user_principles)

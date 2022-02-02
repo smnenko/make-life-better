@@ -1,11 +1,11 @@
 from typing import List
 
-from models.money import Money, MoneyType
+from models.money import MoneyRecord, MoneyType
 
 
 class MoneyTotalsCalculator:
 
-    def __init__(self, monies: List[Money]):
+    def __init__(self, monies: List[MoneyRecord]):
         self.monies = monies
 
     def get_total_incomes(self):

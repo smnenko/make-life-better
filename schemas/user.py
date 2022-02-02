@@ -54,10 +54,6 @@ class User(BaseModel):
         orm_mode = True
 
 
-class UsersList(BaseModel):
-    users: List[User]
-
-
 class UserCreate(BaseUserCreationSchema, BaseUserValidationSchema):
     pass
 

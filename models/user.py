@@ -36,10 +36,10 @@ class User(Base):
 
     def __acl__(self):
         return [
-            (Allow, f'user:{self.id}', 'batch'),
             (Allow, f'user:{self.id}', 'view'),
             (Allow, f'user:{self.id}', 'edit'),
             (Allow, f'user:{self.id}', 'delete'),
+            (Allow, 'admin:True', 'view'),
             (Allow, 'admin:True', 'edit'),
             (Allow, 'admin:True', 'delete')
         ]

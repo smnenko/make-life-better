@@ -22,7 +22,6 @@ class Calorie(BaseModel):
     id: int
     dish: Dish
     amount: int
-    calories: float
     date: date
 
     class Config:
