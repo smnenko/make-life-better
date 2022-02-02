@@ -3,17 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi_permissions import Allow, Authenticated, configure_permissions
 
 from core.exceptions import InvalidTokenError
+from core.security import get_by_token
 from models.user import User
-from utils.user_auth import get_by_token
 
-oauth2_scheme = OAuth2PasswordBearer('users/token')
 
-ADMIN_ACL = [
-        (Allow, 'admin:True', 'create'),
-        (Allow, 'admin:True', 'view'),
-        (Allow, 'admin:True', 'edit'),
-        (Allow, 'admin:True', 'delete')
-]
+oauth2_scheme = OAuth2PasswordBearer('api/v1/token')
+
 DEFAULT_ACL = [
     (Allow, Authenticated, 'batch'),
     (Allow, Authenticated, 'create'),

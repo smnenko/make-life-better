@@ -1,72 +1,65 @@
 from datetime import date
 
-from sqlalchemy.orm import sessionmaker
+import sqlalchemy
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from core.database import engine
 from core.exceptions import ObjectDoesNotExists
 from models.money import MoneyRecord
 from schemas.money import MoneyCreate
 
-Session = sessionmaker()
-Session.configure(bind=engine)
-
 
 class MoneyRepository:
 
-    session = Session()
+    def __init__(self, session: Session):
+        self.session = session
 
-    @classmethod
-    def get_all_by_user_id(
-            cls,
+    async def get_all_by_user_id(
+            self,
             user_id: int,
-            start_date: date = date(1970, 1, 1),
-            end_date: date = date.today()
+            start_date: date,
+            end_date: date
     ):
-        return (
-            cls
-            .session
-            .query(MoneyRecord)
-            .filter(
+        query = (
+            select(MoneyRecord)
+            .where(
                 MoneyRecord.user_id == user_id,
                 MoneyRecord.date >= start_date,
                 MoneyRecord.date <= end_date
             )
             .order_by(MoneyRecord.id.desc())
         )
+        return (await self.session.execute(query)).scalars().all()
 
-    @classmethod
-    def get_by_id(cls, money_id):
-        return cls.session.query(MoneyRecord).filter(MoneyRecord.id == money_id).first()
+    async def get_by_id(self, money_id):
+        query = select(MoneyRecord).where(MoneyRecord.id == money_id)
+        try:
+            return (await self.session.execute(query)).scalars().one()
+        except sqlalchemy.exc.NoResultFound:
+            raise ObjectDoesNotExists('Money record doesn\'t exists')
 
-    @classmethod
-    def create_money(cls, user_id: int, money: MoneyCreate):
+    async def create_money(self, user_id: int, money: MoneyCreate):
         money = MoneyRecord(
             user_id=user_id,
             **money.dict(),
             date=date.today()
         )
-        cls.session.add(money)
-        cls.session.commit()
-        cls.session.refresh(money)
+        self.session.add(money)
+        await self.session.commit()
+        await self.session.refresh(money)
         return money
 
-    @classmethod
-    def update_money(cls, money: MoneyRecord, data: MoneyCreate):
+    async def update_money(self, money: MoneyRecord, data: MoneyCreate):
         money.is_regular = data.is_regular
         money.title = data.title
         money.amount = data.amount
         money.type = data.type
 
-        cls.session.add(money)
-        cls.session.commit()
-        cls.session.refresh(money)
+        self.session.add(money)
+        await self.session.commit()
+        await self.session.refresh(money)
         return money
 
-    @classmethod
-    def delete_money(cls, money: MoneyRecord):
-        money = cls.session.query(MoneyRecord).filter(MoneyRecord.id == money.id)
-        if not isinstance(money.first(), MoneyRecord):
-            raise ObjectDoesNotExists('Money record does\'t exist')
-
-        money.delete()
-        cls.session.commit()
+    async def delete_money(self, money: MoneyRecord):
+        await self.session.delete(money)
+        await self.session.commit()

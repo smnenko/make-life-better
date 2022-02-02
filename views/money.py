@@ -1,12 +1,12 @@
 from datetime import date
-from typing import List, Optional
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_permissions import has_permission, permission_exception
 
+from core.dependencies import get_money_repository
 from core.exceptions import ObjectDoesNotExists
 from core.permissions import DEFAULT_ACL, Permission, get_user_principles
-from models.money import MoneyRecord
 from repository.money import MoneyRepository
 from schemas.money import Money, MoneyCreate, MoneyList
 from utils.money_calculator import MoneyTotalsCalculator
@@ -14,79 +14,96 @@ from utils.money_calculator import MoneyTotalsCalculator
 router = APIRouter(prefix='/money', tags=['Money'])
 
 
-@router.get('/{money_id}')
-async def get_money_record(
-        money_id: int,
-        money: Optional[MoneyRecord] = Permission('view', MoneyRepository.get_by_id)
-):
-    if not money:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            'Money record not found'
-        )
-    return MoneyRecord.from_orm(money)
-
-
-@router.get('/user/{user_id}')
+@router.get(
+    path='/user/{user_id}',
+    response_model=MoneyList,
+    description='Method return list of monies with calculated incomes and outlays'
+)
 async def get_all_user_money_records(
         user_id: int,
-        start_date: date,
-        end_date: date,
-        monies: List[MoneyRecord] = Depends(MoneyRepository.get_all_by_user_id),
+        start_date: date = date(1970, 1, 1),
+        end_date: date = date.today(),
+        repository: MoneyRepository = Depends(get_money_repository),
         principals: List = Depends(get_user_principles),
-        acls: List = Permission('batch', DEFAULT_ACL)
 ):
+    monies = await repository.get_all_by_user_id(user_id, start_date, end_date)
     if not all(has_permission(principals, 'view', i) for i in monies):
         raise permission_exception
 
     incomes, outlays = MoneyTotalsCalculator(monies).get_tuple_result()
-    return MoneyList(
-        monies=[Money.from_orm(i) for i in monies],
-        total_incomes=incomes,
-        total_outlays=outlays
-    )
+    return {
+        'monies': monies,
+        'total_incomes': incomes,
+        'total_outlays': outlays
+    }
 
 
-@router.post('/{user_id}')
+@router.get(
+    path='/{money_id}',
+    response_model=Money,
+    description='Method returns money record if user has required permissions'
+)
+async def get_money_record(
+        money_id: int,
+        repository: MoneyRepository = Depends(get_money_repository),
+        principles: List = Depends(get_user_principles)
+):
+    money = await repository.get_by_id(money_id)
+    if has_permission(principles, 'view', money):
+        return money
+    raise HTTPException(status.HTTP_400_BAD_REQUEST)
+
+
+@router.post(
+    path='/{user_id}',
+    response_model=Money,
+    description='Method creates new money record and returns it'
+)
 async def create_money_record(
         user_id: int,
         data: MoneyCreate,
-        acls: List = Permission('create', DEFAULT_ACL)
+        acls: List = Permission('create', DEFAULT_ACL),
+        repository: MoneyRepository = Depends(get_money_repository)
 ):
-    money = MoneyRepository.create_money(user_id, data)
-    return Money.from_orm(money)
+    return await repository.create_money(user_id, data)
 
 
-@router.put('/{money_id}')
+@router.put(
+    path='/{money_id}',
+    response_model=Money,
+    description='Method allows to update money record model and return it out'
+)
 async def edit_money_record(
         money_id: int,
         data: MoneyCreate,
-        money: Optional[MoneyRecord] = Depends(MoneyRepository.get_by_id),
+        repository: MoneyRepository = Depends(get_money_repository),
         principles: List = Depends(get_user_principles),
-        acls: List = Permission('edit', DEFAULT_ACL)
 ):
-    if not has_permission(principles, 'delete', money):
-        raise permission_exception
-
     try:
-        money = MoneyRepository.update_money(money, data)
-        return Money.from_orm(money)
+        money = await repository.get_by_id(money_id)
     except ObjectDoesNotExists as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, e.message)
+    if not has_permission(principles, 'edit', money):
+        raise permission_exception
+
+    return await repository.update_money(money, data)
 
 
-@router.delete('/{money_id}')
+@router.delete(
+    path='/{money_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    description='Method allows to delete money record entity from database'
+)
 async def delete_money_record(
         money_id: int,
-        money: Optional[MoneyRecord] = Depends(MoneyRepository.get_by_id),
+        repository: MoneyRepository = Depends(get_money_repository),
         principles: List = Depends(get_user_principles),
-        acls: List = Permission('delete', DEFAULT_ACL)
 ):
+    try:
+        money = await repository.get_by_id(money_id)
+    except ObjectDoesNotExists:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST)
     if not has_permission(principles, 'delete', money):
         raise permission_exception
 
-    try:
-        MoneyRepository.delete_money(money)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except ObjectDoesNotExists:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST)
+    await repository.delete_money(money)

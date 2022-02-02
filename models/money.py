@@ -8,7 +8,7 @@ from sqlalchemy import (
     Date,
     Enum,
     ForeignKey,
-    Integer, 
+    Integer,
     String
 )
 from sqlalchemy.sql import func

@@ -2,11 +2,9 @@ import os
 from datetime import datetime, timedelta
 
 import bcrypt
-from fastapi import Depends
 from jose import JWTError, jwt
 
 from core.database import async_session
-from core.dependencies import get_user_repository
 from core.exceptions import InvalidTokenError
 from repository.user import UserRepository
 
@@ -28,12 +26,11 @@ async def get_by_token(token: str):
         raise credentials_exception
 
     async with async_session() as session:
-        async with session.begin():
-            user = await UserRepository(session).get_by_username(username)
-            if user is None or not user.is_active:
-                raise credentials_exception
+        user = await UserRepository(session).get_by_username(username)
+        if user is None or not user.is_active:
+            raise credentials_exception
 
-            return user
+        return user
 
 
 def verify_password(hashed_password: str, password: str):
@@ -45,15 +42,14 @@ def verify_password(hashed_password: str, password: str):
 
 async def authenticate(username: str, password: str):
     async with async_session() as session:
-        async with session.begin():
-            user = await UserRepository(session).get_by_username(username)
+        user = await UserRepository(session).get_by_username(username)
 
-            if not user:
-                return False
-            if not verify_password(user.password, password):
-                return False
+        if not user:
+            return False
+        if not verify_password(user.password, password):
+            return False
 
-            return user
+        return user
 
 
 def create_access_token(
